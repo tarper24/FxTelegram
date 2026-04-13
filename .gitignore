@@ -1,0 +1,208 @@
+# =============================================================================
+# FxTelegram .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Project-specific
+# -----------------------------------------------------------------------------
+
+# Superpowers (local planning only, never committed)
+.superpowers/
+
+# Cloudflare Workers secrets / local dev vars
+.dev.vars
+.dev.vars.*
+
+# Wrangler build cache and local state
+.wrangler/
+
+# -----------------------------------------------------------------------------
+# Node (https://github.com/github/gitignore/blob/main/Node.gitignore)
+# -----------------------------------------------------------------------------
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage
+*.lcov
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Snowpack
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# npm / eslint / stylelint cache
+.npm
+.eslintcache
+.stylelintcache
+
+# REPL history
+.node_repl_history
+
+# npm pack output
+*.tgz
+
+# Yarn
+.yarn-integrity
+
+# Environment variable files
+.env
+.env.*
+!.env.example
+
+# Build caches / output
+.cache
+.parcel-cache
+.next
+out
+.nuxt
+dist
+.output
+.temp
+.svelte-kit/
+**/.vitepress/dist
+**/.vitepress/cache
+.docusaurus
+
+# Serverless
+.serverless/
+
+# pnpm
+.pnpm-store
+
+# Yarn v3
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+.vite/
+
+# -----------------------------------------------------------------------------
+# Windows (https://github.com/github/gitignore/blob/main/Global/Windows.gitignore)
+# -----------------------------------------------------------------------------
+
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# -----------------------------------------------------------------------------
+# macOS (https://github.com/github/gitignore/blob/main/Global/macOS.gitignore)
+# -----------------------------------------------------------------------------
+
+.DS_Store
+.localized
+__MACOSX/
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+
+# -----------------------------------------------------------------------------
+# Linux (https://github.com/github/gitignore/blob/main/Global/Linux.gitignore)
+# -----------------------------------------------------------------------------
+
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+nohup.out
+
+# -----------------------------------------------------------------------------
+# JetBrains (https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore)
+# -----------------------------------------------------------------------------
+
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/aws.xml
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+cmake-build-*/
+.idea/**/mongoSettings.xml
+*.iws
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+.idea/replstate.xml
+.idea/sonarlint/
+.idea/sonarlint.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+.idea/httpRequests
+http-client.private.env.json
+.idea/caches/build_file_checksums.ser
+.idea/.cache/.Apifox_Helper
+.idea/ApifoxUploaderProjectSetting.xml
+.idea/**/copilot.data.migration.*.xml
+
+# -----------------------------------------------------------------------------
+# VS Code (https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore)
+# -----------------------------------------------------------------------------
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!*.code-workspace
+*.vsix
