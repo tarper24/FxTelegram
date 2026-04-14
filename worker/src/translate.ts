@@ -15,10 +15,11 @@ export async function translateText(text: string, targetLang: string): Promise<s
     url.searchParams.set('langpair', `auto|${targetLang}`);
 
     const res = await fetch(url.toString());
+    if (!res.ok) return text;
     const json: MyMemoryResponse = await res.json();
 
     if (json.responseStatus !== 200) return text;
-    return json.responseData.translatedText || text;
+    return json.responseData?.translatedText || text;
   } catch {
     return text;
   }
