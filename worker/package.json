@@ -10,11 +10,11 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
-    "typescript": "^5.0.0",
+    "typescript": "^6.0.0",
     "vitest": "^2.0.0",
     "wrangler": "^4.0.0"
   },
   "dependencies": {
-    "@cf-wasm/photon": "^0.0.21"
+    "@cf-wasm/photon": "^0.3.4"
   }
 }
