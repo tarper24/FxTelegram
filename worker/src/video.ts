@@ -14,6 +14,16 @@ export async function handleVideoProxy(
     return new Response('Video not found', { status: 404 });
   }
 
+  // Validate URL scheme before any outbound request or redirect
+  try {
+    const parsed = new URL(cdnUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return new Response('Invalid upstream URL', { status: 502 });
+    }
+  } catch {
+    return new Response('Invalid upstream URL', { status: 502 });
+  }
+
   // HEAD request to check file size
   let head: Response;
   try {
@@ -21,6 +31,11 @@ export async function handleVideoProxy(
   } catch {
     return new Response('Video upstream unreachable', { status: 502 });
   }
+
+  if (!head.ok) {
+    return new Response('Video unavailable', { status: 502 });
+  }
+
   const rawLength = head.headers.get('Content-Length');
   const contentLength = rawLength !== null ? parseInt(rawLength, 10) : Infinity;
 
