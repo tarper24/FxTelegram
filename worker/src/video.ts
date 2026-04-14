@@ -29,10 +29,12 @@ export async function handleVideoProxy(
   try {
     head = await fetch(cdnUrl, { method: 'HEAD' });
   } catch {
+    await env.KV.delete(videoKey(channelUsername, messageId));
     return new Response('Video upstream unreachable', { status: 502 });
   }
 
   if (!head.ok) {
+    await env.KV.delete(videoKey(channelUsername, messageId));
     return new Response('Video unavailable', { status: 502 });
   }
 

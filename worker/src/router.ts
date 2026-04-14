@@ -1,4 +1,4 @@
-import { LANG_CODE_RE, SUBDOMAINS } from './constants';
+import { LANG_CODE_RE, SUBDOMAINS, TELEGRAM_USERNAME_RE } from './constants';
 import type { ContentType, ParsedRequest } from './types';
 
 function parseFlags(hostname: string, search: URLSearchParams) {
@@ -46,6 +46,7 @@ export function parseRequest(request: Request): ParsedRequest {
   // Internal proxy: /video/channel/msgId
   if (first === 'video' && segments.length >= 3) {
     if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
+    if (!TELEGRAM_USERNAME_RE.test(segments[1]!)) return { contentType: 'unknown', ...nullFields(), flags };
     const messageId = parseInt(segments[2]!, 10);
     return {
       contentType: 'video',
@@ -63,6 +64,7 @@ export function parseRequest(request: Request): ParsedRequest {
   // Internal proxy: /mosaic/channel/msgId
   if (first === 'mosaic' && segments.length >= 3) {
     if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
+    if (!TELEGRAM_USERNAME_RE.test(segments[1]!)) return { contentType: 'unknown', ...nullFields(), flags };
     const messageId = parseInt(segments[2]!, 10);
     return {
       contentType: 'mosaic',
@@ -111,6 +113,7 @@ export function parseRequest(request: Request): ParsedRequest {
 
   // Public post: /channelname/msgId[/photo/N | /lang]
   if (segments.length >= 2 && /^\d+$/.test(segments[1]!)) {
+    if (!TELEGRAM_USERNAME_RE.test(first)) return { contentType: 'unknown', ...nullFields(), flags };
     const channelUsername = first;
     const messageId = parseInt(segments[1]!, 10);
     let photoIndex: number | null = null;

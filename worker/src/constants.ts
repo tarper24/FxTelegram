@@ -11,6 +11,7 @@ export const TTL = {
   CHANNEL: 60 * 60 * 24,  // 24 hours — channel name/avatar
   VIDEO: 60 * 30,          // 30 minutes — Telegram CDN video URLs expire
   MOSAIC: 60 * 60,         // 1 hour — composited mosaic images
+  TRANSLATE: 60 * 60,      // 1 hour — translated post text
 } as const;
 
 /** Size/count limits */
@@ -24,6 +25,9 @@ export const LIMITS = {
 
 /** ISO 639-1 two-letter codes recognised as language path modifiers */
 export const LANG_CODE_RE = /^[a-z]{2}$/;
+
+/** Valid Telegram public username: 5–32 chars, starts with a letter, alphanumeric + underscores only */
+export const TELEGRAM_USERNAME_RE = /^[a-zA-Z][a-zA-Z0-9_]{4,31}$/;
 
 /** Subdomains that trigger special modes */
 export const SUBDOMAINS = {

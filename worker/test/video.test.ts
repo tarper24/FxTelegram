@@ -44,11 +44,13 @@ describe('handleVideoProxy', () => {
     expect(res.headers.get('Accept-Ranges')).toBe('bytes');
   });
 
-  it('returns 502 when HEAD fetch throws', async () => {
+  it('returns 502 when HEAD fetch throws and evicts stale KV entry', async () => {
     vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/video.mp4');
+    vi.mocked(kv.delete).mockResolvedValue(undefined);
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
     const res = await handleVideoProxy('durov', 1, new Request('https://fxtelegram.me/video/durov/1'), env);
     expect(res.status).toBe(502);
+    expect(vi.mocked(kv.delete)).toHaveBeenCalledWith('video:durov:1');
   });
 
   it('redirects when Content-Length is absent from HEAD', async () => {
@@ -61,13 +63,15 @@ describe('handleVideoProxy', () => {
     expect(res.headers.get('Location')).toBe('https://cdn.tg/video.mp4');
   });
 
-  it('returns 502 when HEAD returns non-ok status (e.g. 403)', async () => {
+  it('returns 502 when HEAD returns non-ok status and evicts stale KV entry', async () => {
     vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/video.mp4');
+    vi.mocked(kv.delete).mockResolvedValue(undefined);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       new Response(null, { status: 403, statusText: 'Forbidden' })
     ));
     const res = await handleVideoProxy('durov', 1, new Request('https://fxtelegram.org/video/durov/1'), env);
     expect(res.status).toBe(502);
+    expect(vi.mocked(kv.delete)).toHaveBeenCalledWith('video:durov:1');
   });
 
   it('passes Range header through to upstream', async () => {

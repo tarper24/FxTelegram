@@ -1,3 +1,5 @@
+import { TTL } from './constants';
+
 interface MyMemoryResponse {
   responseStatus: number;
   responseData: { translatedText: string };
@@ -11,7 +13,9 @@ interface MyMemoryResponse {
  */
 export async function translateText(text: string, targetLang: string, kv?: KVNamespace): Promise<string> {
   const textToTranslate = text.length > 500 ? text.slice(0, 497) + '...' : text;
-  const cacheKey = `tr:${targetLang}:${text.slice(0, 50)}`;
+  const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  const hashHex = [...new Uint8Array(hashBuf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  const cacheKey = `tr:${targetLang}:${hashHex}`;
 
   if (kv) {
     const cached = await kv.get(cacheKey, 'text');
@@ -31,7 +35,7 @@ export async function translateText(text: string, targetLang: string, kv?: KVNam
     const translated = json.responseData?.translatedText || text;
 
     if (kv) {
-      await kv.put(cacheKey, translated, { expirationTtl: 3600 });
+      await kv.put(cacheKey, translated, { expirationTtl: TTL.TRANSLATE });
     }
 
     return translated;

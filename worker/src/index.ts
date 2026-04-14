@@ -30,7 +30,10 @@ export default {
       const msgData = await fetchOrScrape(parsed.channelUsername, parsed.messageId, env, ctx);
       if (!msgData || msgData.images.length < 2) return new Response('Not found', { status: 404 });
       const mosaicBytes = await buildMosaic(msgData.images.map(i => i.url));
-      ctx.waitUntil(setCacheBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
+      // KV values max out at 25 MiB — guard before writing
+      if (mosaicBytes.byteLength <= 25 * 1024 * 1024) {
+        ctx.waitUntil(setCacheBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
+      }
       return new Response(mosaicBytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' } });
     }
 
