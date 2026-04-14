@@ -44,7 +44,6 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const description = bodyParts.join('\n');
 
   const tags: string[] = [
-    meta('og:site_name', 'FxTelegram'),
     meta('og:title', title),
     ...(description ? [meta('og:description', description)] : []),
     meta('og:url', telegramUrl),
@@ -100,11 +99,29 @@ ${tags.join('\n')}
   return html;
 }
 
-export function buildOEmbedJson(channelUsername: string, channelName: string, messageId: number, _origin = 'https://fxtelegram.me') {
+function formatDate(iso: string | null): string | null {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return null;
+  }
+}
+
+export function buildOEmbedJson(
+  channelUsername: string,
+  channelName: string,
+  messageId: number,
+  _origin = 'https://fxtelegram.me',
+  publishedAt: string | null = null,
+) {
+  const date = formatDate(publishedAt);
   return {
     type: 'link' as const,
     version: '1.0' as const,
-    provider_name: 'FxTelegram',
+    provider_name: date ? `FxTelegram • ${date}` : 'FxTelegram',
     provider_url: 'https://github.com/tarper24/FxTelegram',
     author_name: channelName,
     author_url: `https://t.me/${channelUsername}`,

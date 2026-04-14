@@ -50,7 +50,7 @@ export default {
       if (!match) return new Response('Bad Request', { status: 400 });
       const [, ch, id] = match;
       const msg = await fetchOrScrape(ch!, parseInt(id!, 10), env, ctx);
-      const json = buildOEmbedJson(ch!, msg?.channelName ?? ch!, parseInt(id!, 10), origin);
+      const json = buildOEmbedJson(ch!, msg?.channelName ?? ch!, parseInt(id!, 10), origin, msg?.publishedAt ?? null);
       return new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
     }
 

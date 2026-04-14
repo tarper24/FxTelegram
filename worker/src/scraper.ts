@@ -49,10 +49,24 @@ function extractMessageText(html: string): string {
   if (divMatch?.[1]) {
     return divMatch[1]
       .replace(/<br\s*\/?>/gi, '\n')
+      // For external links with display text: show "text (url)" so the URL is
+      // visible and auto-linkable by Discord. Internal t.me links keep display text only.
+      .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, inner: string) => {
+        const text = inner.replace(/<[^>]+>/g, '').trim();
+        if (!href.startsWith('http') || href.includes('//t.me/') || href.startsWith('tg://') || text === href) {
+          return text;
+        }
+        return `${text} (${href})`;
+      })
       .replace(/<[^>]+>/g, '')
       .trim();
   }
   return extractMeta(html, 'og:description') ?? '';
+}
+
+function extractPublishedAt(html: string): string | null {
+  const m = html.match(/<time\b[^>]*\bdatetime="([^"]+)"[^>]*>/i);
+  return m?.[1] ?? null;
 }
 
 function extractAlbumImages(html: string): ImageData[] {
@@ -127,11 +141,14 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const fileNameMatch = msgHtml.match(/class="tgme_widget_message_document_title"[^>]*>([^<]+)</);
   const fileExtraMatch = msgHtml.match(/class="tgme_widget_message_document_extra"[^>]*>([^<]+)</);
 
+  const publishedAt = extractPublishedAt(msgHtml);
+
   const data: MessageData = {
     channelUsername,
     channelName,
     channelAvatarUrl: null,
     messageId,
+    publishedAt,
     text,
     images: [],
     video: null,
