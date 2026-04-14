@@ -13,24 +13,31 @@ const SIMPLE_POST_HTML = `<!DOCTYPE html><html><head>
   <meta property="og:image" content="https://cdn.telegram.org/img1.jpg"/>
   <meta property="og:site_name" content="Telegram"/>
 </head><body>
-  <div class="tgme_widget_message_text">Hello world</div>
+  <div class="tgme_widget_message" data-post="durov/1">
+    <div class="tgme_widget_message_text">Hello world</div>
+    <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/img1.jpg')"></a>
+  </div>
 </body></html>`;
 
 const VIDEO_POST_HTML = `<!DOCTYPE html><html><head>
   <meta property="og:title" content="News Channel"/>
   <meta property="og:description" content="Watch this"/>
 </head><body>
-  <video class="tgme_widget_message_video" src="https://cdn.telegram.org/vid.mp4"></video>
-  <i class="tgme_widget_message_video_thumb" style="background-image:url('https://cdn.telegram.org/thumb.jpg')"></i>
+  <div class="tgme_widget_message" data-post="news/2">
+    <video class="tgme_widget_message_video" src="https://cdn.telegram.org/vid.mp4"></video>
+    <i class="tgme_widget_message_video_thumb" style="background-image:url('https://cdn.telegram.org/thumb.jpg')"></i>
+  </div>
 </body></html>`;
 
 const ALBUM_HTML = `<!DOCTYPE html><html><head>
   <meta property="og:title" content="Photo Channel"/>
   <meta property="og:description" content="Album"/>
 </head><body>
-  <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/a.jpg')"></a>
-  <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/b.jpg')"></a>
-  <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/c.jpg')"></a>
+  <div class="tgme_widget_message" data-post="photos/3">
+    <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/a.jpg')"></a>
+    <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/b.jpg')"></a>
+    <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/c.jpg')"></a>
+  </div>
 </body></html>`;
 
 describe('scrapePost', () => {
@@ -127,6 +134,28 @@ describe('scrapePost', () => {
     mockFetch(html);
     const data = await scrapePost('test', 7);
     expect(data?.text).toBe('Hello world');
+  });
+
+  it('extracts the correct post when multiple messages appear on the page', async () => {
+    // Regression: t.me/s/ returns a multi-message page; scraper must use data-post
+    // to scope extraction to the requested message, not the first one on the page.
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="My Channel"/>
+      <meta property="og:image" content="https://cdn.telegram.org/wrong.jpg"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="mychannel/228">
+        <div class="tgme_widget_message_text">Wrong post</div>
+        <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/wrong.jpg')"></a>
+      </div>
+      <div class="tgme_widget_message" data-post="mychannel/241">
+        <div class="tgme_widget_message_text">Correct post</div>
+        <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/correct.jpg')"></a>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('mychannel', 241);
+    expect(data?.text).toBe('Correct post');
+    expect(data?.images[0]?.url).toBe('https://cdn.telegram.org/correct.jpg');
   });
 
   it('extractMessageText handles nested divs in message text without truncating', async () => {

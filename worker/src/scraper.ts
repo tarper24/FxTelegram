@@ -68,6 +68,23 @@ function extractAlbumImages(html: string): ImageData[] {
   return images;
 }
 
+/**
+ * Extract the HTML block for a specific message by its data-post attribute.
+ * t.me/s/ returns a multi-message page; we must scope extraction to the
+ * requested message ID to avoid pulling content from adjacent posts.
+ */
+function extractMessageBlock(html: string, channelUsername: string, messageId: number): string {
+  const marker = `data-post="${channelUsername}/${messageId}"`;
+  const markerLower = `data-post="${channelUsername.toLowerCase()}/${messageId}"`;
+  let idx = html.indexOf(marker);
+  if (idx === -1) idx = html.toLowerCase().indexOf(markerLower);
+  if (idx === -1) return html; // fallback: full page (shouldn't happen for valid posts)
+
+  // Slice from this message's marker to the next data-post= (next message) or end of page
+  const nextPost = html.indexOf('data-post=', idx + marker.length);
+  return nextPost !== -1 ? html.slice(idx, nextPost) : html.slice(idx);
+}
+
 export async function scrapePost(channelUsername: string, messageId: number): Promise<MessageData | null> {
   const url = `https://t.me/s/${channelUsername}/${messageId}`;
 
@@ -87,21 +104,28 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
 
   const html = await response.text();
 
+  // Channel name lives in <head> og:title — safe to read from full page
   const channelName = extractMeta(html, 'og:title') ?? channelUsername;
-  const text = extractMessageText(html);
+
+  // All content extraction must be scoped to the specific message block
+  const msgHtml = extractMessageBlock(html, channelUsername, messageId);
+
+  const text = extractMessageText(msgHtml);
+  // og:image is page-level and may reflect a different post — only use as a
+  // last resort if the message block contains no photo_wrap elements
   const ogImage = extractMeta(html, 'og:image');
 
   // Album images
-  const albumImages = extractAlbumImages(html);
+  const albumImages = extractAlbumImages(msgHtml);
 
   // Video
-  const videoUrl = extractVideoUrl(html) ?? null;
-  const videoThumbData = extractVideoThumb(html);
+  const videoUrl = extractVideoUrl(msgHtml) ?? null;
+  const videoThumbData = extractVideoThumb(msgHtml);
   const videoThumb = videoThumbData?.url ?? null;
 
   // File
-  const fileNameMatch = html.match(/class="tgme_widget_message_document_title"[^>]*>([^<]+)</);
-  const fileExtraMatch = html.match(/class="tgme_widget_message_document_extra"[^>]*>([^<]+)</);
+  const fileNameMatch = msgHtml.match(/class="tgme_widget_message_document_title"[^>]*>([^<]+)</);
+  const fileExtraMatch = msgHtml.match(/class="tgme_widget_message_document_extra"[^>]*>([^<]+)</);
 
   const data: MessageData = {
     channelUsername,
