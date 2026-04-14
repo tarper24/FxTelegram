@@ -1,5 +1,5 @@
 import { parseRequest } from './router';
-import { getCached, setCache, postKey, videoKey, mosaicKey } from './cache';
+import { getCached, setCache, getCachedBinary, setCacheBinary, postKey, videoKey, mosaicKey } from './cache';
 import { scrapePost } from './scraper';
 import { buildEmbed, buildOEmbedJson } from './embed';
 import { handleVideoProxy } from './video';
@@ -14,6 +14,7 @@ export default {
     const ua = request.headers.get('User-Agent') ?? '';
     const isBot = UA.BOT.test(ua);
     const isDiscord = UA.DISCORD.test(ua);
+    const origin = new URL(request.url).origin;
 
     // ── Internal proxy: video stream ──────────────────────────────────────
     if (parsed.contentType === 'video' && parsed.channelUsername && parsed.messageId) {
@@ -22,14 +23,14 @@ export default {
 
     // ── Internal proxy: mosaic image ──────────────────────────────────────
     if (parsed.contentType === 'mosaic' && parsed.channelUsername && parsed.messageId) {
-      const cached = await getCached<Uint8Array>(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId));
+      const cached = await getCachedBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId));
       if (cached) {
         return new Response(cached, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' } });
       }
       const msgData = await fetchOrScrape(parsed.channelUsername, parsed.messageId, env, ctx);
       if (!msgData || msgData.images.length < 2) return new Response('Not found', { status: 404 });
       const mosaicBytes = await buildMosaic(msgData.images.map(i => i.url));
-      ctx.waitUntil(setCache(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
+      ctx.waitUntil(setCacheBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
       return new Response(mosaicBytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' } });
     }
 
@@ -41,7 +42,7 @@ export default {
       if (!match) return new Response('Bad Request', { status: 400 });
       const [, ch, id] = match;
       const msg = await fetchOrScrape(ch!, parseInt(id!, 10), env, ctx);
-      const json = buildOEmbedJson(ch!, msg?.channelName ?? ch!, parseInt(id!, 10));
+      const json = buildOEmbedJson(ch!, msg?.channelName ?? ch!, parseInt(id!, 10), origin);
       return new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -51,6 +52,26 @@ export default {
       return telegramUrl
         ? Response.redirect(telegramUrl, 302)
         : new Response('Not Found', { status: 404 });
+    }
+
+    // ── Bot path: unsupported content types — redirect or fallback ────────
+    if (parsed.contentType === 'profile' && parsed.channelUsername) {
+      return Response.redirect(`https://t.me/${parsed.channelUsername}`, 302);
+    }
+    if (parsed.contentType === 'invite' && parsed.inviteHash) {
+      return Response.redirect(`https://t.me/+${parsed.inviteHash}`, 302);
+    }
+    if (parsed.contentType === 'private-post') {
+      const privateUrl = parsed.channelUsername && parsed.messageId
+        ? `https://t.me/${parsed.channelUsername}/${parsed.messageId}`
+        : 'https://t.me';
+      const privateEmbed = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta property="og:title" content="Private channel post"/>
+<meta property="og:description" content="Private channel post — view on Telegram"/>
+<meta property="og:site_name" content="FxTelegram"/>
+</head><body><a href="${privateUrl}">View on Telegram</a></body></html>`;
+      return htmlResponse(privateEmbed);
     }
 
     // ── Bot path: fetch message data ──────────────────────────────────────
@@ -74,13 +95,22 @@ export default {
 
     // ── Path modifier: translate ──────────────────────────────────────────
     if (parsed.langCode && msg.text) {
-      msg = { ...msg, text: await translateText(msg.text, parsed.langCode) };
+      msg = { ...msg, text: await translateText(msg.text, parsed.langCode, env.KV) };
     }
 
     // ── Subdomain: direct media ───────────────────────────────────────────
     if (parsed.flags.directMedia) {
       const mediaUrl = msg.video?.url ?? msg.images[0]?.url;
-      return mediaUrl ? Response.redirect(mediaUrl, 302) : new Response('No media', { status: 404 });
+      if (!mediaUrl) return new Response('No media', { status: 404 });
+      try {
+        const parsedMedia = new URL(mediaUrl);
+        if (!['http:', 'https:'].includes(parsedMedia.protocol)) {
+          return new Response('Invalid upstream URL', { status: 502 });
+        }
+      } catch {
+        return new Response('Invalid upstream URL', { status: 502 });
+      }
+      return Response.redirect(mediaUrl, 302);
     }
 
     // ── Subdomain: JSON API ───────────────────────────────────────────────
@@ -92,6 +122,7 @@ export default {
 
     // ── Build embed HTML ──────────────────────────────────────────────────
     const html = buildEmbed(msg, {
+      origin,
       forceMosaic: parsed.flags.forceMosaic,
       textOnly: parsed.flags.textOnly,
       isDiscord,
