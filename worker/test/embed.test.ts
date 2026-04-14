@@ -112,13 +112,13 @@ describe('buildEmbed', () => {
 });
 
 describe('buildOEmbedJson', () => {
-  it('returns correct structure with provided origin', () => {
+  it('returns correct structure', () => {
     const json = buildOEmbedJson('durov', "Durov's Channel", 123, 'https://fxtelegram.org');
     expect(json.type).toBe('link');
     expect(json.version).toBe('1.0');
     expect(json.provider_name).toBe('FxTelegram');
     expect(json.author_name).toBe("Durov's Channel");
-    expect(json.provider_url).toBe('https://fxtelegram.org');
-    expect(json.author_url).toBe('https://t.me/durov/123');
+    expect(json.provider_url).toBe('https://github.com/tarper24/FxTelegram');
+    expect(json.author_url).toBe('https://t.me/durov');
   });
 });

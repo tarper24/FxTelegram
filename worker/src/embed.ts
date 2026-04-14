@@ -90,13 +90,13 @@ ${tags.join('\n')}
   return html;
 }
 
-export function buildOEmbedJson(channelUsername: string, channelName: string, messageId: number, origin = 'https://fxtelegram.me') {
+export function buildOEmbedJson(channelUsername: string, channelName: string, messageId: number, _origin = 'https://fxtelegram.me') {
   return {
     type: 'link' as const,
     version: '1.0' as const,
     provider_name: 'FxTelegram',
-    provider_url: origin,
+    provider_url: 'https://github.com/tarper24/FxTelegram',
     author_name: channelName,
-    author_url: `https://t.me/${channelUsername}/${messageId}`,
+    author_url: `https://t.me/${channelUsername}`,
   };
 }

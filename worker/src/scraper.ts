@@ -49,6 +49,17 @@ function extractMessageText(html: string): string {
   if (divMatch?.[1]) {
     return divMatch[1]
       .replace(/<br\s*\/?>/gi, '\n')
+      // Preserve URLs from <a> tags so they remain clickable in Discord embeds.
+      // - If anchor text is already a URL → keep text (it's the URL itself)
+      // - If href is a t.me / tg:// link → keep display text (@mention, hashtag, etc.)
+      // - External link with display text (e.g. "Shop link") → use the href URL
+      .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, inner: string) => {
+        const text = inner.replace(/<[^>]+>/g, '').trim();
+        if (text.startsWith('http') || !href.startsWith('http') || href.includes('//t.me/') || href.startsWith('tg://')) {
+          return text;
+        }
+        return href;
+      })
       .replace(/<[^>]+>/g, '')
       .trim();
   }

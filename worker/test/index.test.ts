@@ -240,7 +240,7 @@ describe('oEmbed endpoint', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('application/json');
     const json = await res.json() as Record<string, string>;
-    expect(json.provider_url).toBe(ORIGIN);
+    expect(json.provider_url).toBe('https://github.com/tarper24/FxTelegram');
     expect(json.type).toBe('link');
   });
 });
