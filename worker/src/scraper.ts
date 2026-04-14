@@ -42,7 +42,10 @@ function extractVideoThumb(html: string): { url: string; width?: number; height?
 }
 
 function extractMessageText(html: string): string {
-  const divMatch = html.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+  // Greedy match so nested </div> tags inside the message div don't prematurely
+  // terminate the capture. The outer div is the last one before </body>, so
+  // backtracking to the last </div> that precedes a block-level boundary is safe.
+  const divMatch = html.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div\b|<\/div|<\/body|$)/);
   if (divMatch?.[1]) {
     return divMatch[1]
       .replace(/<br\s*\/?>/gi, '\n')
