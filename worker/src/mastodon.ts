@@ -34,7 +34,7 @@ function textToHtml(text: string): string {
     .join('');
 }
 
-export function buildMastodonStatus(msg: MessageData, origin: string, mastodonId: string): Record<string, unknown> {
+export function buildMastodonStatus(msg: MessageData, origin: string): Record<string, unknown> {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
 
   // Build content HTML — bold title (if scraped) + body paragraphs
@@ -95,7 +95,7 @@ export function buildMastodonStatus(msg: MessageData, origin: string, mastodonId
   }
 
   return {
-    id: mastodonId,
+    id: String(msg.messageId),
     url: telegramUrl,
     uri: telegramUrl,
     created_at: msg.publishedAt ?? new Date().toISOString(),
