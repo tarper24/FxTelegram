@@ -78,12 +78,14 @@ export async function buildMosaic(urls: string[]): Promise<Uint8Array> {
 
     for (let i = 0; i < images.length; i++) {
       const cell = resize(images[i]!, CELL_W, CELL_H, SamplingFilter.Lanczos3);
+      pendingFree.push(cell); // track for cleanup if watermark throws
       const col = i % 2;
       const row = Math.floor(i / 2);
       watermark(canvas, cell, BigInt(col * CELL_W), BigInt(row * CELL_H));
       cell.free();
+      pendingFree.splice(pendingFree.indexOf(cell), 1); // untrack after free
       images[i]!.free();
-      pendingFree.shift(); // successfully freed — remove from head
+      pendingFree.shift(); // successfully freed source image — remove from head
     }
 
     const result = canvas.get_bytes_jpeg(85);
