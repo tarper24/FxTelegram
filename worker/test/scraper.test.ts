@@ -224,6 +224,20 @@ describe('scrapePost', () => {
     expect(data?.messageId).toBe(236);
   });
 
+  it('extracts channel avatar URL from tgme_page_photo_image', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="FxTelegram"/>
+    </head><body>
+      <i class="tgme_page_photo_image" style="background-image:url('https://cdn4.telesco.pe/avatar.jpg')"></i>
+      <div class="tgme_widget_message" data-post="FxTelegram24/1">
+        <div class="tgme_widget_message_text">Hello</div>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('FxTelegram24', 1);
+    expect(data?.channelAvatarUrl).toBe('https://cdn4.telesco.pe/avatar.jpg');
+  });
+
   it('extractMessageText handles nested divs in message text without truncating', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>

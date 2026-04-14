@@ -79,6 +79,13 @@ function extractMessageTitle(innerHtml: string): string | null {
   return m[2]!.replace(/<[^>]+>/g, '').trim() || null;
 }
 
+function extractChannelAvatar(html: string): string | null {
+  // Channel avatar sits in the page header as a background-image on tgme_page_photo_image
+  const m = html.match(/<i\b[^>]*class="[^"]*tgme_page_photo_image[^"]*"[^>]*style="([^"]+)"/i)
+    ?? html.match(/<i\b[^>]*style="([^"]+)"[^>]*class="[^"]*tgme_page_photo_image[^"]*"/i);
+  return m?.[1] ? extractBgUrl(m[1]) : null;
+}
+
 function extractPublishedAt(html: string): string | null {
   const m = html.match(/<time\b[^>]*\bdatetime="([^"]+)"[^>]*>/i);
   return m?.[1] ?? null;
@@ -184,7 +191,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const data: MessageData = {
     channelUsername,
     channelName,
-    channelAvatarUrl: null,
+    channelAvatarUrl: extractChannelAvatar(html),
     messageId,
     publishedAt,
     title,
