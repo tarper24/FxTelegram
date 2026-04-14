@@ -101,17 +101,35 @@ function extractAlbumImages(html: string): ImageData[] {
  * Extract the HTML block for a specific message by its data-post attribute.
  * t.me/s/ returns a multi-message page; we must scope extraction to the
  * requested message ID to avoid pulling content from adjacent posts.
+ *
+ * For album photos that are not the first in their group, Telegram renders all
+ * photos under the first photo's data-post block — later photos have no block
+ * of their own. We fall back to finding the album block that contains a
+ * ?single link to the requested messageId.
  */
 function extractMessageBlock(html: string, channelUsername: string, messageId: number): string {
   const marker = `data-post="${channelUsername}/${messageId}"`;
   const markerLower = `data-post="${channelUsername.toLowerCase()}/${messageId}"`;
   let idx = html.indexOf(marker);
   if (idx === -1) idx = html.toLowerCase().indexOf(markerLower);
-  if (idx === -1) return html; // fallback: full page (shouldn't happen for valid posts)
 
-  // Slice from this message's marker to the next data-post= (next message) or end of page
-  const nextPost = html.indexOf('data-post=', idx + marker.length);
-  return nextPost !== -1 ? html.slice(idx, nextPost) : html.slice(idx);
+  if (idx !== -1) {
+    const nextPost = html.indexOf('data-post=', idx + marker.length);
+    return nextPost !== -1 ? html.slice(idx, nextPost) : html.slice(idx);
+  }
+
+  // Fallback: non-first album photo — find the album block containing ?single link
+  const singleLink = `/${channelUsername.toLowerCase()}/${messageId}?single`;
+  const linkIdx = html.toLowerCase().indexOf(singleLink);
+  if (linkIdx !== -1) {
+    const blockStart = html.slice(0, linkIdx).lastIndexOf('data-post="');
+    if (blockStart !== -1) {
+      const nextPost = html.indexOf('data-post=', blockStart + 11);
+      return nextPost !== -1 ? html.slice(blockStart, nextPost) : html.slice(blockStart);
+    }
+  }
+
+  return html; // final fallback: full page
 }
 
 export async function scrapePost(channelUsername: string, messageId: number): Promise<MessageData | null> {

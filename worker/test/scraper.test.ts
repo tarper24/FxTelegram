@@ -199,6 +199,31 @@ describe('scrapePost', () => {
     expect(data?.title).toBeNull();
   });
 
+  it('falls back to album block when requested ID is a non-first album photo', async () => {
+    // Regression: in the stream view, photos 235 and 236 of an album are rendered
+    // inside the data-post="channel/234" block — they have no own block.
+    // Requesting /236 must not fall through to the first post on the page.
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Art Channel"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="art/226">
+        <div class="tgme_widget_message_text">Fox Hoodies Restocked!</div>
+        <a class="tgme_widget_message_photo_wrap" href="https://t.me/art/226?single" style="background-image:url('https://cdn.telegram.org/fox.jpg')"></a>
+      </div>
+      <div class="tgme_widget_message" data-post="art/234">
+        <div class="tgme_widget_message_text">Badge commissions finished!</div>
+        <a class="tgme_widget_message_photo_wrap" href="https://t.me/art/234?single" style="background-image:url('https://cdn.telegram.org/badge1.jpg')"></a>
+        <a class="tgme_widget_message_photo_wrap" href="https://t.me/art/235?single" style="background-image:url('https://cdn.telegram.org/badge2.jpg')"></a>
+        <a class="tgme_widget_message_photo_wrap" href="https://t.me/art/236?single" style="background-image:url('https://cdn.telegram.org/badge3.jpg')"></a>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('art', 236);
+    expect(data?.text).toBe('Badge commissions finished!');
+    expect(data?.images).toHaveLength(3);
+    expect(data?.messageId).toBe(236);
+  });
+
   it('extractMessageText handles nested divs in message text without truncating', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>

@@ -17,6 +17,7 @@ export interface ParsedRequest {
   inviteHash: string | null;
   photoIndex: number | null;
   langCode: string | null;
+  mastodonId: string | null;
   isPrivate: boolean;
   flags: {
     forceMosaic: boolean;

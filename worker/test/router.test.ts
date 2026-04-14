@@ -121,4 +121,22 @@ describe('parseRequest', () => {
     expect(r.contentType).toBe('post');
     expect(r.channelUsername).toBe('durov');
   });
+
+  it('parses Mastodon status numeric ID: /api/v1/statuses/:digits', () => {
+    const r = parseRequest(req('https://fxtelegram.me/api/v1/statuses/12345678901234567890'));
+    expect(r.contentType).toBe('mastodon-status');
+    expect(r.mastodonId).toBe('12345678901234567890');
+    expect(r.channelUsername).toBeNull();
+    expect(r.messageId).toBeNull();
+  });
+
+  it('rejects Mastodon status with two-segment path', () => {
+    const r = parseRequest(req('https://fxtelegram.me/api/v1/statuses/chan/236'));
+    expect(r.contentType).toBe('unknown');
+  });
+
+  it('rejects Mastodon status ID with non-digit chars', () => {
+    const r = parseRequest(req('https://fxtelegram.me/api/v1/statuses/coffeeclaws_updates-236'));
+    expect(r.contentType).toBe('unknown');
+  });
 });

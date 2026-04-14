@@ -5,6 +5,7 @@ interface EmbedOptions {
   forceMosaic: boolean;
   textOnly: boolean;
   isDiscord: boolean;
+  mastodonId: string | null;
 }
 
 function esc(str: string): string {
@@ -107,7 +108,9 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
     }
   }
 
-  const activityPubUrl = `${origin}/api/v1/statuses/${msg.channelUsername}/${msg.messageId}`;
+  const activityPubUrl = opts.mastodonId
+    ? `${origin}/api/v1/statuses/${opts.mastodonId}`
+    : `${origin}/api/v1/statuses/${msg.channelUsername}-${msg.messageId}`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">

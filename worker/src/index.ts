@@ -1,5 +1,5 @@
 import { parseRequest } from './router';
-import { getCached, setCache, getCachedBinary, setCacheBinary, postKey, videoKey, mosaicKey } from './cache';
+import { getCached, setCache, getCachedBinary, setCacheBinary, postKey, videoKey, mosaicKey, getMastodonPost, computeMastodonId, storeMastodonPost } from './cache';
 import { scrapePost } from './scraper';
 import { buildEmbed, buildOEmbedJson } from './embed';
 import { handleVideoProxy } from './video';
@@ -56,8 +56,10 @@ export default {
     }
 
     // ── Mastodon/ActivityPub status endpoint ─────────────────────────────
-    if (parsed.contentType === 'mastodon-status' && parsed.channelUsername && parsed.messageId) {
-      const msg = await fetchOrScrape(parsed.channelUsername, parsed.messageId, env, ctx);
+    if (parsed.contentType === 'mastodon-status' && parsed.mastodonId) {
+      const pair = await getMastodonPost(env.FXTELEGRAM_KV, parsed.mastodonId);
+      if (!pair) return new Response('Not Found', { status: 404 });
+      const msg = await fetchOrScrape(pair.channelUsername, pair.messageId, env, ctx);
       if (!msg) return new Response('Not Found', { status: 404 });
       const status = buildMastodonStatus(msg, origin);
       return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
@@ -138,11 +140,14 @@ export default {
     }
 
     // ── Build embed HTML ──────────────────────────────────────────────────
+    const mastodonId = computeMastodonId(msg.channelUsername, msg.messageId);
+    ctx.waitUntil(storeMastodonPost(env.FXTELEGRAM_KV, mastodonId, msg.channelUsername, msg.messageId));
     const html = buildEmbed(msg, {
       origin,
       forceMosaic: parsed.flags.forceMosaic,
       textOnly: parsed.flags.textOnly,
       isDiscord,
+      mastodonId,
     });
 
     return htmlResponse(html);
