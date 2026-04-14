@@ -53,7 +53,8 @@ function extractMessageText(html: string): string {
       // visible and auto-linkable by Discord. Internal t.me links keep display text only.
       .replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, inner: string) => {
         const text = inner.replace(/<[^>]+>/g, '').trim();
-        if (!href.startsWith('http') || href.includes('//t.me/') || href.startsWith('tg://') || text === href) {
+        const norm = (s: string) => s.replace(/\/+$/, '');
+        if (!href.startsWith('http') || href.includes('//t.me/') || href.startsWith('tg://') || norm(text) === norm(href)) {
           return text;
         }
         return `${text} (${href})`;

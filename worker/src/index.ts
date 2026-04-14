@@ -4,6 +4,7 @@ import { scrapePost } from './scraper';
 import { buildEmbed, buildOEmbedJson } from './embed';
 import { handleVideoProxy } from './video';
 import { buildMosaic } from './mosaic';
+import { buildMastodonStatus } from './mastodon';
 import { translateText } from './translate';
 import { UA, TTL } from './constants';
 import type { Env, MessageData } from './types';
@@ -52,6 +53,14 @@ export default {
       const msg = await fetchOrScrape(ch!, parseInt(id!, 10), env, ctx);
       const json = buildOEmbedJson(ch!, msg?.channelName ?? ch!, parseInt(id!, 10), origin, msg?.publishedAt ?? null);
       return new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // ── Mastodon/ActivityPub status endpoint ─────────────────────────────
+    if (parsed.contentType === 'mastodon-status' && parsed.channelUsername && parsed.messageId) {
+      const msg = await fetchOrScrape(parsed.channelUsername, parsed.messageId, env, ctx);
+      if (!msg) return new Response('Not Found', { status: 404 });
+      const status = buildMastodonStatus(msg, origin);
+      return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // ── Human browser redirect ────────────────────────────────────────────

@@ -104,12 +104,16 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
     }
   }
 
+  const activityPubUrl = `${origin}/api/v1/statuses/${msg.channelUsername}/${msg.messageId}`;
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
+<meta name="theme-color" content="#2AABEE"/>
 ${tags.join('\n')}
 <link rel="alternate" type="application/json+oembed" href="${esc(oEmbedUrl)}" title="${esc(msg.channelName)}"/>
+<link rel="alternate" type="application/activity+json" href="${esc(activityPubUrl)}"/>
 </head>
 <body><a href="${esc(telegramUrl)}">View on Telegram</a></body>
 </html>`;

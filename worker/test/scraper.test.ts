@@ -146,6 +146,16 @@ describe('scrapePost', () => {
     expect(data?.text).toBe('Shop: https://example.com and @other and my shop (https://shop.example.com)');
   });
 
+  it('deduplicates link when href differs only by trailing slash', async () => {
+    const html = `<!DOCTYPE html><html><head><meta property="og:title" content="Test"/></head><body>
+      <div class="tgme_widget_message" data-post="ch/2">
+        <div class="tgme_widget_message_text">Shop: <a href="https://example.com/">https://example.com</a></div>
+      </div></body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('ch', 2);
+    expect(data?.text).toBe('Shop: https://example.com');
+  });
+
   it('extracts the correct post when multiple messages appear on the page', async () => {
     // Regression: t.me/s/ returns a multi-message page; scraper must use data-post
     // to scope extraction to the requested message, not the first one on the page.

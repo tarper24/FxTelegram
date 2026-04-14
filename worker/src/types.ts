@@ -6,6 +6,7 @@ export type ContentType =
   | 'video'
   | 'mosaic'
   | 'oembed'
+  | 'mastodon-status'
   | 'unknown';
 
 export interface ParsedRequest {

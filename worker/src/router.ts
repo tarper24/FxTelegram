@@ -43,6 +43,31 @@ export function parseRequest(request: Request): ParsedRequest {
     return { contentType: 'oembed', ...nullFields(), flags };
   }
 
+  // Mastodon/ActivityPub status API: /api/v1/statuses/:channel/:id
+  if (
+    first === 'api' &&
+    segments[1] === 'v1' &&
+    segments[2] === 'statuses' &&
+    segments.length >= 5
+  ) {
+    const channel = segments[3]!;
+    const id = segments[4]!;
+    if (!TELEGRAM_USERNAME_RE.test(channel) || !/^\d+$/.test(id)) {
+      return { contentType: 'unknown', ...nullFields(), flags };
+    }
+    return {
+      contentType: 'mastodon-status',
+      channelUsername: channel,
+      messageId: parseInt(id, 10),
+      chatId: null,
+      inviteHash: null,
+      photoIndex: null,
+      langCode: null,
+      isPrivate: false,
+      flags,
+    };
+  }
+
   // Internal proxy: /video/channel/msgId
   if (first === 'video' && segments.length >= 3) {
     if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
