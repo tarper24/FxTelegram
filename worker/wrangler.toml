@@ -50,3 +50,21 @@ zone_name = "fixupt.me"
 [[routes]]
 pattern = "*.fixupt.me/*"
 zone_name = "fixupt.me"
+
+# ── Dev environment ──────────────────────────────────────────────────────────
+# Deploy with: npx wrangler deploy --env dev
+# Requires fxt.dev.tarper24.net DNS pointed at Cloudflare (orange-cloud).
+# KV namespace setup:
+#   npx wrangler kv namespace create KV --env dev
+#   npx wrangler kv namespace create KV --env dev --preview
+[env.dev]
+name = "fxtelegram-dev"
+
+[[env.dev.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_DEV_KV_ID"
+preview_id = "REPLACE_WITH_DEV_KV_PREVIEW_ID"
+
+[[env.dev.routes]]
+pattern = "fxt.dev.tarper24.net/*"
+zone_name = "tarper24.net"
