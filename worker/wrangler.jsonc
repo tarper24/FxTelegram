@@ -16,34 +16,55 @@
     }
   ],
 
-  // ── Routes — requires each domain's DNS to be orange-cloud on Cloudflare ─────
+  // ── Routes — one entry per hostname, custom_domain: true ─────────────────────
+  // Subdomains: m. (mosaic)  d. (direct)  t. (text-only)  api. (oEmbed)
   "routes": [
     // fxtelegram.org (primary)
-    { "pattern": "fxtelegram.org/*",   "zone_name": "fxtelegram.org", "custom_domain": true },
-    { "pattern": "*.fxtelegram.org/*", "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "fxtelegram.org",       "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "m.fxtelegram.org",     "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "d.fxtelegram.org",     "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "t.fxtelegram.org",     "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "api.fxtelegram.org",   "zone_name": "fxtelegram.org", "custom_domain": true },
 
     // fxtelegram.me (alternate)
-    { "pattern": "fxtelegram.me/*",    "zone_name": "fxtelegram.me",  "custom_domain": true },
-    { "pattern": "*.fxtelegram.me/*",  "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "fxtelegram.me",        "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "m.fxtelegram.me",      "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "d.fxtelegram.me",      "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "t.fxtelegram.me",      "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "api.fxtelegram.me",    "zone_name": "fxtelegram.me",  "custom_domain": true },
 
-    // fx-t.me (alternate — short form, swap t.me for fx-t.me)
-    { "pattern": "fx-t.me/*",          "zone_name": "fx-t.me",        "custom_domain": true },
-    { "pattern": "*.fx-t.me/*",        "zone_name": "fx-t.me",        "custom_domain": true },
+    // fx-t.me (short form — swap t.me for fx-t.me)
+    { "pattern": "fx-t.me",              "zone_name": "fx-t.me",        "custom_domain": true },
+    { "pattern": "m.fx-t.me",            "zone_name": "fx-t.me",        "custom_domain": true },
+    { "pattern": "d.fx-t.me",            "zone_name": "fx-t.me",        "custom_domain": true },
+    { "pattern": "t.fx-t.me",            "zone_name": "fx-t.me",        "custom_domain": true },
+    { "pattern": "api.fx-t.me",          "zone_name": "fx-t.me",        "custom_domain": true },
 
     // fixupt.me (alternate)
-    { "pattern": "fixupt.me/*",        "zone_name": "fixupt.me",      "custom_domain": true },
-    { "pattern": "*.fixupt.me/*",      "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "fixupt.me",            "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "m.fixupt.me",          "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "d.fixupt.me",          "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "t.fixupt.me",          "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "api.fixupt.me",        "zone_name": "fixupt.me",      "custom_domain": true },
 
-    // txlegram.me / txlegram.org — Discord s/telegram/txlegram shorthand
-    { "pattern": "txlegram.me/*",      "zone_name": "txlegram.me",    "custom_domain": true },
-    { "pattern": "*.txlegram.me/*",    "zone_name": "txlegram.me",    "custom_domain": true },
-    { "pattern": "txlegram.org/*",     "zone_name": "txlegram.org",   "custom_domain": true },
-    { "pattern": "*.txlegram.org/*",   "zone_name": "txlegram.org",   "custom_domain": true }
+    // txlegram.me (Discord s/telegram/txlegram)
+    { "pattern": "txlegram.me",          "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "m.txlegram.me",        "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "d.txlegram.me",        "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "t.txlegram.me",        "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "api.txlegram.me",      "zone_name": "txlegram.me",    "custom_domain": true },
+
+    // txlegram.org (Discord s/telegram/txlegram)
+    { "pattern": "txlegram.org",         "zone_name": "txlegram.org",   "custom_domain": true },
+    { "pattern": "m.txlegram.org",       "zone_name": "txlegram.org",   "custom_domain": true },
+    { "pattern": "d.txlegram.org",       "zone_name": "txlegram.org",   "custom_domain": true },
+    { "pattern": "t.txlegram.org",       "zone_name": "txlegram.org",   "custom_domain": true },
+    { "pattern": "api.txlegram.org",     "zone_name": "txlegram.org",   "custom_domain": true }
   ],
 
   // ── Dev environment ───────────────────────────────────────────────────────────
   // Deploy with: npx wrangler deploy --env dev
-  // Requires fxt.dev.tarper24.net DNS pointed at Cloudflare (orange-cloud).
+  // Requires DNS pointed at Cloudflare (orange-cloud) for each hostname below.
   // KV namespace setup:
   //   npx wrangler kv namespace create KV --env dev
   //   npx wrangler kv namespace create KV --env dev --preview
@@ -58,7 +79,11 @@
         }
       ],
       "routes": [
-        { "pattern": "fxt.dev.tarper24.net/*", "zone_name": "tarper24.net", "custom_domain": true }
+        { "pattern": "fxt.dev.tarper24.net",     "zone_name": "tarper24.net", "custom_domain": true },
+        { "pattern": "m.fxt.dev.tarper24.net",   "zone_name": "tarper24.net", "custom_domain": true },
+        { "pattern": "d.fxt.dev.tarper24.net",   "zone_name": "tarper24.net", "custom_domain": true },
+        { "pattern": "t.fxt.dev.tarper24.net",   "zone_name": "tarper24.net", "custom_domain": true },
+        { "pattern": "api.fxt.dev.tarper24.net", "zone_name": "tarper24.net", "custom_domain": true }
       ]
     }
   }
