@@ -28,10 +28,14 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
   const oEmbedUrl = `${origin}/oembed?url=${encodeURIComponent(telegramUrl)}`;
 
+  const description = msg.file && !opts.textOnly
+    ? [msg.text, `📎 ${msg.file.name} · ${msg.file.mimeType}`].filter(Boolean).join('\n')
+    : msg.text;
+
   const tags: string[] = [
     meta('og:site_name', 'FxTelegram'),
     meta('og:title', msg.channelName),
-    meta('og:description', msg.text),
+    meta('og:description', description),
     meta('og:url', telegramUrl),
     nameMeta('twitter:card', opts.textOnly ? 'summary' : 'summary_large_image'),
   ];

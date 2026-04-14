@@ -3,14 +3,40 @@ main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Create with: wrangler kv namespace create KV
-# Fill in the IDs returned by that command
+# Create KV namespaces with:
+#   npx wrangler kv namespace create KV
+#   npx wrangler kv namespace create KV --preview
+# Then replace the placeholder IDs below.
 [[kv_namespaces]]
 binding = "KV"
 id = "REPLACE_WITH_KV_ID"
 preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
 
-# Routes — add zone_name for each domain once pointed at Cloudflare
-# [[routes]]
-# pattern = "fxtelegram.me/*"
-# zone_name = "fxtelegram.me"
+# ── Routes — requires each domain's DNS to be orange-cloud on Cloudflare ────
+
+# fxtelegram.me
+[[routes]]
+pattern = "fxtelegram.me/*"
+zone_name = "fxtelegram.me"
+
+[[routes]]
+pattern = "*.fxtelegram.me/*"
+zone_name = "fxtelegram.me"
+
+# fx-t.me
+[[routes]]
+pattern = "fx-t.me/*"
+zone_name = "fx-t.me"
+
+[[routes]]
+pattern = "*.fx-t.me/*"
+zone_name = "fx-t.me"
+
+# fixupt.me
+[[routes]]
+pattern = "fixupt.me/*"
+zone_name = "fixupt.me"
+
+[[routes]]
+pattern = "*.fixupt.me/*"
+zone_name = "fixupt.me"
