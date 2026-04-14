@@ -55,6 +55,12 @@ export default {
       return new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
     }
 
+    // ── ActivityPub object URL (/users/): Discord reads snowflake from href only ─
+    // It never GETs this URL for content — redirect to GitHub like FxEmbed does.
+    if (parsed.contentType === 'mastodon-status' && new URL(request.url).pathname.startsWith('/users/')) {
+      return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
+    }
+
     // ── Mastodon/ActivityPub status endpoint ─────────────────────────────
     if (parsed.contentType === 'mastodon-status' && parsed.mastodonId) {
       const cfg = await getMastodonPost(env.FXTELEGRAM_KV, parsed.mastodonId);

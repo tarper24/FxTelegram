@@ -28,8 +28,8 @@ import { translateText } from '../src/translate';
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const BASE_MSG: MessageData = {
-  channelUsername: 'durov',
-  channelName: "Durov's Channel",
+  channelUsername: 'FxTelegram24',
+  channelName: 'FxTelegram',
   channelAvatarUrl: null,
   messageId: 123,
   text: 'Hello world',
@@ -96,9 +96,9 @@ afterEach(() => vi.clearAllMocks());
 describe('Human browser redirect', () => {
   it('redirects to t.me for regular browser UA', async () => {
     const env: Env = { FXTELEGRAM_KV: makeKv() };
-    const res = await worker.fetch(req('/durov/123', HUMAN_UA), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123', HUMAN_UA), env, makeCtx());
     expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('https://t.me/durov/123');
+    expect(res.headers.get('Location')).toBe('https://t.me/FxTelegram24/123');
   });
 });
 
@@ -107,7 +107,7 @@ describe('Bot — cache hit', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
-    const res = await worker.fetch(req('/durov/123'), env, ctx);
+    const res = await worker.fetch(req('/FxTelegram24/123'), env, ctx);
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('text/html');
     const html = await res.text();
@@ -122,11 +122,11 @@ describe('Bot — cache miss, scrape success', () => {
     vi.mocked(scrapePost).mockResolvedValue(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
-    const res = await worker.fetch(req('/durov/123'), env, ctx);
+    const res = await worker.fetch(req('/FxTelegram24/123'), env, ctx);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('og:title');
-    expect(vi.mocked(scrapePost)).toHaveBeenCalledWith('durov', 123);
+    expect(vi.mocked(scrapePost)).toHaveBeenCalledWith('FxTelegram24', 123);
     expect(ctx.waitUntil).toHaveBeenCalled();
   });
 });
@@ -136,10 +136,10 @@ describe('Bot — scrape failure (fallback embed)', () => {
     const kv = makeKv(null);
     vi.mocked(scrapePost).mockResolvedValue(null);
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123'), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('@durov');
+    expect(html).toContain('@FxTelegram24');
   });
 });
 
@@ -147,7 +147,7 @@ describe('Discord native gallery', () => {
   it('returns multiple og:image tags for Discordbot + album', async () => {
     const kv = makeKv(ALBUM_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123', 'Discordbot/2.0'), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123', 'Discordbot/2.0'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
     const imageMatches = html.match(/property="og:image"/g) ?? [];
@@ -161,10 +161,10 @@ describe('Mosaic path (non-Discord bot)', () => {
   it('uses /mosaic/ URL in embed for Slackbot + album', async () => {
     const kv = makeKv(ALBUM_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123', SLACK_UA), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123', SLACK_UA), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('/mosaic/durov/123');
+    expect(html).toContain('/mosaic/FxTelegram24/123');
     // Should NOT have three separate og:image tags
     const imageMatches = html.match(/property="og:image"/g) ?? [];
     expect(imageMatches.length).toBe(1);
@@ -175,11 +175,11 @@ describe('Video path', () => {
   it('includes og:video proxy URL in embed', async () => {
     const kv = makeKv(VIDEO_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123'), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('og:video');
-    expect(html).toContain('/video/durov/123');
+    expect(html).toContain('/video/FxTelegram24/123');
   });
 });
 
@@ -189,7 +189,7 @@ describe('Text-only subdomain (t. prefix)', () => {
     const env: Env = { FXTELEGRAM_KV: kv };
     // t. subdomain → t.fxtelegram.org
     const res = await worker.fetch(
-      new Request('https://t.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
+      new Request('https://t.fxtelegram.org/FxTelegram24/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(200);
@@ -205,7 +205,7 @@ describe('Direct media subdomain (d. prefix)', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
-      new Request('https://d.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
+      new Request('https://d.fxtelegram.org/FxTelegram24/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(302);
@@ -218,13 +218,13 @@ describe('API subdomain (api. prefix)', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
-      new Request('https://api.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
+      new Request('https://api.fxtelegram.org/FxTelegram24/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('application/json');
     const json = await res.json() as MessageData;
-    expect(json.channelUsername).toBe('durov');
+    expect(json.channelUsername).toBe('FxTelegram24');
     expect(json.messageId).toBe(123);
   });
 });
@@ -234,7 +234,7 @@ describe('oEmbed endpoint', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
-      new Request(`${ORIGIN}/OwOembed?url=https://t.me/durov/123`, { headers: { 'User-Agent': BOT_UA } }),
+      new Request(`${ORIGIN}/OwOembed?url=https://t.me/FxTelegram24/123`, { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(200);
@@ -248,9 +248,9 @@ describe('oEmbed endpoint', () => {
 describe('Profile redirect for bots', () => {
   it('redirects to t.me/<username> for profile path', async () => {
     const env: Env = { FXTELEGRAM_KV: makeKv() };
-    const res = await worker.fetch(req('/durov', BOT_UA), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24', BOT_UA), env, makeCtx());
     expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('https://t.me/durov');
+    expect(res.headers.get('Location')).toBe('https://t.me/FxTelegram24');
   });
 });
 
@@ -277,7 +277,7 @@ describe('Photo modifier', () => {
   it('selects the specified photo index from album', async () => {
     const kv = makeKv(ALBUM_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123/photo/2'), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123/photo/2'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
     // photo/2 → index 1 → b.jpg
@@ -292,7 +292,7 @@ describe('Language modifier', () => {
     const kv = makeKv(BASE_MSG);
     vi.mocked(translateText).mockResolvedValue('Bonjour le monde');
     const env: Env = { FXTELEGRAM_KV: kv };
-    const res = await worker.fetch(req('/durov/123/fr'), env, makeCtx());
+    const res = await worker.fetch(req('/FxTelegram24/123/fr'), env, makeCtx());
     expect(res.status).toBe(200);
     expect(vi.mocked(translateText)).toHaveBeenCalledWith('Hello world', 'fr', kv);
     const html = await res.text();
@@ -317,7 +317,7 @@ describe('Mosaic endpoint (/mosaic/channel/id)', () => {
     } as unknown as KVNamespace;
     const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
-    const res = await worker.fetch(req('/mosaic/durov/123'), env, ctx);
+    const res = await worker.fetch(req('/mosaic/FxTelegram24/123'), env, ctx);
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('image/jpeg');
     expect(vi.mocked(buildMosaic)).toHaveBeenCalled();
@@ -328,8 +328,8 @@ describe('Video endpoint (/video/channel/id)', () => {
   it('delegates to handleVideoProxy', async () => {
     vi.mocked(handleVideoProxy).mockResolvedValue(new Response('video', { status: 200 }));
     const env: Env = { FXTELEGRAM_KV: makeKv() };
-    const res = await worker.fetch(req('/video/durov/123'), env, makeCtx());
-    expect(vi.mocked(handleVideoProxy)).toHaveBeenCalledWith('durov', 123, expect.any(Request), env);
+    const res = await worker.fetch(req('/video/FxTelegram24/123'), env, makeCtx());
+    expect(vi.mocked(handleVideoProxy)).toHaveBeenCalledWith('FxTelegram24', 123, expect.any(Request), env);
     expect(res.status).toBe(200);
   });
 });
@@ -339,12 +339,24 @@ describe('Origin propagation', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
-      new Request('https://fx-t.me/durov/123', { headers: { 'User-Agent': BOT_UA } }),
+      new Request('https://fx-t.me/FxTelegram24/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('https://fx-t.me/OwOembed');
     expect(html).not.toContain('https://fxtelegram.me/OwOembed');
+  });
+});
+
+describe('ActivityPub object URL (/users/)', () => {
+  it('redirects to GitHub regardless of UA', async () => {
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
+    const res = await worker.fetch(
+      new Request(`${ORIGIN}/users/FxTelegram24/statuses/12345678901234567890`, { headers: { 'User-Agent': BOT_UA } }),
+      env, makeCtx()
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('https://github.com/tarper24/FxTelegram');
   });
 });

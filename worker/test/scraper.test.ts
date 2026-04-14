@@ -8,12 +8,12 @@ function mockFetch(html: string, status = 200) {
 }
 
 const SIMPLE_POST_HTML = `<!DOCTYPE html><html><head>
-  <meta property="og:title" content="Durov's Channel"/>
+  <meta property="og:title" content="FxTelegram"/>
   <meta property="og:description" content="Hello world"/>
   <meta property="og:image" content="https://cdn.telegram.org/img1.jpg"/>
   <meta property="og:site_name" content="Telegram"/>
 </head><body>
-  <div class="tgme_widget_message" data-post="durov/1">
+  <div class="tgme_widget_message" data-post="FxTelegram24/1">
     <div class="tgme_widget_message_text">Hello world</div>
     <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/img1.jpg')"></a>
   </div>
@@ -43,21 +43,21 @@ const ALBUM_HTML = `<!DOCTYPE html><html><head>
 describe('scrapePost', () => {
   it('returns null on non-200 response', async () => {
     mockFetch('Not found', 404);
-    expect(await scrapePost('durov', 999)).toBeNull();
+    expect(await scrapePost('FxTelegram24', 999)).toBeNull();
   });
 
   it('extracts channel name and message text from meta tags', async () => {
     mockFetch(SIMPLE_POST_HTML);
-    const data = await scrapePost('durov', 1);
-    expect(data?.channelName).toBe("Durov's Channel");
+    const data = await scrapePost('FxTelegram24', 1);
+    expect(data?.channelName).toBe('FxTelegram');
     expect(data?.text).toBe('Hello world');
-    expect(data?.channelUsername).toBe('durov');
+    expect(data?.channelUsername).toBe('FxTelegram24');
     expect(data?.messageId).toBe(1);
   });
 
   it('extracts single image from og:image', async () => {
     mockFetch(SIMPLE_POST_HTML);
-    const data = await scrapePost('durov', 1);
+    const data = await scrapePost('FxTelegram24', 1);
     expect(data?.images).toHaveLength(1);
     expect(data?.images[0]?.url).toBe('https://cdn.telegram.org/img1.jpg');
     expect(data?.hasAlbum).toBe(false);
@@ -95,7 +95,7 @@ describe('scrapePost', () => {
 
   it('returns null on network error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network failure')));
-    expect(await scrapePost('durov', 1)).toBeNull();
+    expect(await scrapePost('FxTelegram24', 1)).toBeNull();
   });
 
   it('extracts video URL when src precedes class in tag', async () => {
@@ -195,7 +195,7 @@ describe('scrapePost', () => {
 
   it('returns null title when no bold opener', async () => {
     mockFetch(SIMPLE_POST_HTML);
-    const data = await scrapePost('durov', 1);
+    const data = await scrapePost('FxTelegram24', 1);
     expect(data?.title).toBeNull();
   });
 

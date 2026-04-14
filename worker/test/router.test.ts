@@ -5,9 +5,9 @@ describe('parseRequest', () => {
   const req = (url: string) => new Request(url);
 
   it('parses a standard public post', () => {
-    const r = parseRequest(req('https://fxtelegram.me/durov/123'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24/123'));
     expect(r.contentType).toBe('post');
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
     expect(r.messageId).toBe(123);
     expect(r.flags.forceMosaic).toBe(false);
     expect(r.flags.directMedia).toBe(false);
@@ -18,59 +18,59 @@ describe('parseRequest', () => {
   });
 
   it('parses m. subdomain as forceMosaic', () => {
-    const r = parseRequest(req('https://m.fxtelegram.me/durov/123'));
+    const r = parseRequest(req('https://m.fxtelegram.me/FxTelegram24/123'));
     expect(r.flags.forceMosaic).toBe(true);
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
   });
 
   it('parses ?m query flag as forceMosaic', () => {
-    const r = parseRequest(req('https://fxtelegram.me/durov/123?m'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24/123?m'));
     expect(r.flags.forceMosaic).toBe(true);
   });
 
   it('parses ?mosaic query flag as forceMosaic', () => {
-    const r = parseRequest(req('https://fxtelegram.me/durov/123?mosaic'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24/123?mosaic'));
     expect(r.flags.forceMosaic).toBe(true);
   });
 
   it('parses d. subdomain as directMedia', () => {
-    const r = parseRequest(req('https://d.fxtelegram.me/durov/123'));
+    const r = parseRequest(req('https://d.fxtelegram.me/FxTelegram24/123'));
     expect(r.flags.directMedia).toBe(true);
   });
 
   it('parses t. subdomain as textOnly', () => {
-    const r = parseRequest(req('https://t.fxtelegram.me/durov/123'));
+    const r = parseRequest(req('https://t.fxtelegram.me/FxTelegram24/123'));
     expect(r.flags.textOnly).toBe(true);
   });
 
   it('parses api. subdomain as jsonApi', () => {
-    const r = parseRequest(req('https://api.fxtelegram.me/durov/123'));
+    const r = parseRequest(req('https://api.fxtelegram.me/FxTelegram24/123'));
     expect(r.flags.jsonApi).toBe(true);
   });
 
   it('parses language path modifier', () => {
-    const r = parseRequest(req('https://fxtelegram.me/durov/123/fr'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24/123/fr'));
     expect(r.langCode).toBe('fr');
     expect(r.photoIndex).toBeNull();
   });
 
   it('parses /photo/N path modifier', () => {
-    const r = parseRequest(req('https://fxtelegram.me/durov/123/photo/2'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24/123/photo/2'));
     expect(r.photoIndex).toBe(2);
     expect(r.langCode).toBeNull();
   });
 
   it('parses /video/ proxy path', () => {
-    const r = parseRequest(req('https://fxtelegram.me/video/durov/123'));
+    const r = parseRequest(req('https://fxtelegram.me/video/FxTelegram24/123'));
     expect(r.contentType).toBe('video');
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
     expect(r.messageId).toBe(123);
   });
 
   it('parses /mosaic/ proxy path', () => {
-    const r = parseRequest(req('https://fxtelegram.me/mosaic/durov/123'));
+    const r = parseRequest(req('https://fxtelegram.me/mosaic/FxTelegram24/123'));
     expect(r.contentType).toBe('mosaic');
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
     expect(r.messageId).toBe(123);
   });
 
@@ -95,34 +95,41 @@ describe('parseRequest', () => {
   });
 
   it('parses oEmbed endpoint', () => {
-    const r = parseRequest(req('https://fxtelegram.me/OwOembed?url=https://t.me/durov/1'));
+    const r = parseRequest(req('https://fxtelegram.me/OwOembed?url=https://t.me/FxTelegram24/1'));
     expect(r.contentType).toBe('oembed');
   });
 
   it('parses profile /username', () => {
-    const r = parseRequest(req('https://fxtelegram.me/telegram'));
+    const r = parseRequest(req('https://fxtelegram.me/FxTelegram24'));
     expect(r.contentType).toBe('profile');
-    expect(r.channelUsername).toBe('telegram');
+    expect(r.channelUsername).toBe('FxTelegram24');
   });
 
   it('works on fx-t.me domain', () => {
-    const r = parseRequest(req('https://fx-t.me/durov/123'));
+    const r = parseRequest(req('https://fx-t.me/FxTelegram24/123'));
     expect(r.contentType).toBe('post');
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
   });
 
   it('works on m.fx-t.me domain', () => {
-    const r = parseRequest(req('https://m.fx-t.me/durov/123'));
+    const r = parseRequest(req('https://m.fx-t.me/FxTelegram24/123'));
     expect(r.flags.forceMosaic).toBe(true);
   });
 
   it('parses fixupt.me domain', () => {
-    const r = parseRequest(req('https://fixupt.me/durov/123'));
+    const r = parseRequest(req('https://fixupt.me/FxTelegram24/123'));
     expect(r.contentType).toBe('post');
-    expect(r.channelUsername).toBe('durov');
+    expect(r.channelUsername).toBe('FxTelegram24');
   });
 
-  it('parses Mastodon status numeric ID: /api/v1/statuses/:digits', () => {
+  it('parses ActivityPub object URL: /users/:channel/statuses/:snowflake', () => {
+    const r = parseRequest(req('https://fxtelegram.me/users/coffeeclaws_updates/statuses/12345678901234567890'));
+    expect(r.contentType).toBe('mastodon-status');
+    expect(r.mastodonId).toBe('12345678901234567890');
+    expect(r.channelUsername).toBeNull(); // channel resolved via KV, not from URL
+  });
+
+  it('parses Mastodon REST API: /api/v1/statuses/:snowflake', () => {
     const r = parseRequest(req('https://fxtelegram.me/api/v1/statuses/12345678901234567890'));
     expect(r.contentType).toBe('mastodon-status');
     expect(r.mastodonId).toBe('12345678901234567890');
