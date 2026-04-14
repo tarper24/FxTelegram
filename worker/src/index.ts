@@ -57,10 +57,18 @@ export default {
 
     // ── Mastodon/ActivityPub status endpoint ─────────────────────────────
     if (parsed.contentType === 'mastodon-status' && parsed.mastodonId) {
-      const pair = await getMastodonPost(env.FXTELEGRAM_KV, parsed.mastodonId);
-      if (!pair) return new Response('Not Found', { status: 404 });
-      const msg = await fetchOrScrape(pair.channelUsername, pair.messageId, env, ctx);
+      const cfg = await getMastodonPost(env.FXTELEGRAM_KV, parsed.mastodonId);
+      if (!cfg) return new Response('Not Found', { status: 404 });
+      let msg = await fetchOrScrape(cfg.channelUsername, cfg.messageId, env, ctx);
       if (!msg) return new Response('Not Found', { status: 404 });
+      // Replay the same view modifiers that were active when the embed was served
+      if (cfg.photoIndex !== null && msg.images.length > 0) {
+        const photo = msg.images[cfg.photoIndex - 1] ?? msg.images[0]!;
+        msg = { ...msg, images: [photo], hasAlbum: false, video: null };
+      }
+      if (cfg.textOnly) {
+        msg = { ...msg, images: [], video: null };
+      }
       const status = buildMastodonStatus(msg, origin);
       return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
     }
@@ -140,8 +148,16 @@ export default {
     }
 
     // ── Build embed HTML ──────────────────────────────────────────────────
-    const mastodonId = computeMastodonId(msg.channelUsername, msg.messageId);
-    ctx.waitUntil(storeMastodonPost(env.FXTELEGRAM_KV, mastodonId, msg.channelUsername, msg.messageId));
+    const mastodonCfg = {
+      channelUsername: msg.channelUsername,
+      messageId: msg.messageId,
+      photoIndex: parsed.photoIndex,
+      forceMosaic: parsed.flags.forceMosaic,
+      textOnly: parsed.flags.textOnly,
+      mediaCount: msg.images.length + (msg.video ? 1 : 0),
+    };
+    const mastodonId = computeMastodonId(mastodonCfg);
+    ctx.waitUntil(storeMastodonPost(env.FXTELEGRAM_KV, mastodonId, mastodonCfg));
     const html = buildEmbed(msg, {
       origin,
       forceMosaic: parsed.flags.forceMosaic,
