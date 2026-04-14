@@ -44,8 +44,19 @@ export function parseRequest(request: Request): ParsedRequest {
     return { contentType: 'oembed', ...nullFields(), flags };
   }
 
-  // Mastodon/ActivityPub status API: /api/v1/statuses/:mastodonId
-  // Opaque 16-hex-char ID — channel/post resolved via persistent KV lookup.
+  // ActivityPub object URL: /users/:channel/statuses/:snowflake
+  // This is the href Discord reads from the <link rel="alternate" type="application/activity+json"> tag.
+  if (first === 'users' && segments[2] === 'statuses' && segments.length === 4) {
+    const channel = segments[1]!;
+    const mid = segments[3]!;
+    if (!TELEGRAM_USERNAME_RE.test(channel) || !/^\d{1,20}$/.test(mid)) {
+      return { contentType: 'unknown', ...nullFields(), flags };
+    }
+    return { contentType: 'mastodon-status', ...nullFields(), mastodonId: mid, flags };
+  }
+
+  // Mastodon REST API: /api/v1/statuses/:snowflake
+  // Discord fetches this after extracting the snowflake from the /users/ ActivityPub URL.
   if (
     first === 'api' &&
     segments[1] === 'v1' &&
@@ -54,18 +65,7 @@ export function parseRequest(request: Request): ParsedRequest {
   ) {
     const mid = segments[3]!;
     if (!/^\d{1,20}$/.test(mid)) return { contentType: 'unknown', ...nullFields(), flags };
-    return {
-      contentType: 'mastodon-status',
-      channelUsername: null,
-      messageId: null,
-      chatId: null,
-      inviteHash: null,
-      photoIndex: null,
-      langCode: null,
-      mastodonId: mid,
-      isPrivate: false,
-      flags,
-    };
+    return { contentType: 'mastodon-status', ...nullFields(), mastodonId: mid, flags };
   }
 
   // Internal proxy: /video/channel/msgId
