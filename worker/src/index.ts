@@ -75,7 +75,7 @@ export default {
       if (cfg.textOnly) {
         msg = { ...msg, images: [], video: null };
       }
-      const status = buildMastodonStatus(msg, origin);
+      const status = buildMastodonStatus(msg, origin, parsed.mastodonId);
       return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
     }
 
