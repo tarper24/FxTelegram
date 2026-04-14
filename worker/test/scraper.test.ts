@@ -90,4 +90,55 @@ describe('scrapePost', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network failure')));
     expect(await scrapePost('durov', 1)).toBeNull();
   });
+
+  it('extracts video URL when src precedes class in tag', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="News Channel"/>
+    </head><body>
+      <video src="https://cdn.telegram.org/vid.mp4" class="tgme_widget_message_video"></video>
+      <i class="tgme_widget_message_video_thumb" style="background-image:url('https://cdn.telegram.org/thumb.jpg')"></i>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('news', 5);
+    expect(data?.video?.url).toBe('https://cdn.telegram.org/vid.mp4');
+  });
+
+  it('uses DOM div text over og:description when div is present', async () => {
+    const truncated = 'A'.repeat(147) + '...';
+    const full = 'A'.repeat(300);
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+      <meta property="og:description" content="${truncated}"/>
+    </head><body>
+      <div class="tgme_widget_message_text">${full}</div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 6);
+    expect(data?.text).toBe(full);
+    expect(data?.text).not.toContain('...');
+  });
+
+  it('extractMessageText handles inline elements without truncating', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">Hello <a href="https://example.com">world</a></div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 7);
+    expect(data?.text).toBe('Hello world');
+  });
+
+  it('extractMessageText handles nested divs in message text without truncating', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">Before nested <div class="inner">nested content</div> after nested</div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 8);
+    // Text should include content from both before and after the nested div
+    expect(data?.text).toContain('Before nested');
+    expect(data?.text).toContain('after nested');
+  });
 });

@@ -41,4 +41,16 @@ describe('translateText', () => {
     const result = await translateText('Привет', 'en');
     expect(result).toBe('Привет');
   });
+
+  it('truncates input over 500 chars before sending to API', async () => {
+    const longText = 'x'.repeat(600);
+    const fetchSpy = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ responseStatus: 200, responseData: { translatedText: 'translated' } }))
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+    await translateText(longText, 'en');
+    const calledUrl = new URL(fetchSpy.mock.calls[0][0] as string);
+    const sentText = calledUrl.searchParams.get('q') ?? '';
+    expect(sentText.length).toBeLessThanOrEqual(500);
+  });
 });

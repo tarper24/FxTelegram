@@ -61,6 +61,15 @@ describe('handleVideoProxy', () => {
     expect(res.headers.get('Location')).toBe('https://cdn.tg/video.mp4');
   });
 
+  it('returns 502 when HEAD returns non-ok status (e.g. 403)', async () => {
+    vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/video.mp4');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(null, { status: 403, statusText: 'Forbidden' })
+    ));
+    const res = await handleVideoProxy('durov', 1, new Request('https://fxtelegram.org/video/durov/1'), env);
+    expect(res.status).toBe(502);
+  });
+
   it('passes Range header through to upstream', async () => {
     vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/small.mp4');
     const fetchSpy = vi.fn()
