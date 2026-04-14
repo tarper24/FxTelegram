@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # npm dependencies for the Cloudflare Worker
+  - package-ecosystem: "npm"
+    directory: "/worker"
+    schedule:
+      interval: "weekly"
+    groups:
+      # Batch patch and minor bumps into a single PR to reduce noise
+      non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
