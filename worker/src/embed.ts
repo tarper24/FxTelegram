@@ -33,7 +33,7 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
     meta('og:title', msg.channelName),
     meta('og:description', msg.text),
     meta('og:url', telegramUrl),
-    nameMeta('twitter:card', 'summary_large_image'),
+    nameMeta('twitter:card', opts.textOnly ? 'summary' : 'summary_large_image'),
   ];
 
   if (!opts.textOnly) {

@@ -73,6 +73,7 @@ describe('buildEmbed', () => {
     expect(html).toContain('/video/durov/123');
     expect(html).toContain('og:video');
     expect(html).toContain('https://cdn.tg/thumb.jpg');
+    expect(html).toContain('video/mp4');
   });
 
   it('textOnly: no og:image or og:video', () => {
@@ -85,6 +86,17 @@ describe('buildEmbed', () => {
     const html = buildEmbed(baseMessage, { forceMosaic: false, textOnly: false, isDiscord: false });
     expect(html).toContain('application/json+oembed');
   });
+
+  it('escapes all HTML entities in channel name and text', () => {
+    const msg = { ...baseMessage, text: '&<>"\'', channelName: '&<>"\'' };
+    const html = buildEmbed(msg, { forceMosaic: false, textOnly: false, isDiscord: false });
+    expect(html).not.toMatch(/content="&[^a]/); // no unescaped & in attributes
+    expect(html).toContain('&amp;');
+    expect(html).toContain('&lt;');
+    expect(html).toContain('&gt;');
+    expect(html).toContain('&quot;');
+    expect(html).toContain('&#x27;');
+  });
 });
 
 describe('buildOEmbedJson', () => {
@@ -94,5 +106,7 @@ describe('buildOEmbedJson', () => {
     expect(json.version).toBe('1.0');
     expect(json.provider_name).toBe('FxTelegram');
     expect(json.author_name).toBe("Durov's Channel");
+    expect(json.provider_url).toBe('https://fxtelegram.me');
+    expect(json.author_url).toBe('https://t.me/durov/123');
   });
 });
