@@ -62,6 +62,9 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const description = bodyParts.join('\n');
 
   const tags: string[] = [
+    // og:site_name is kept solely to trigger Discord's theme-color left border;
+    // oEmbed provider_name takes display priority so it won't show as a duplicate.
+    meta('og:site_name', 'FxTelegram'),
     meta('og:title', title),
     ...(description ? [meta('og:description', description)] : []),
     meta('og:url', telegramUrl),
