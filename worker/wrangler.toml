@@ -1,12 +1,13 @@
 name = "fxtelegram"
 main = "src/index.ts"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2026-04-13"
+# nodejs_compat removed: no node: built-in imports in src/ and @cf-wasm/photon does not require it
 
-# Create KV namespaces with:
+# One-time KV namespace setup (requires Cloudflare auth):
 #   npx wrangler kv namespace create KV
 #   npx wrangler kv namespace create KV --preview
-# Then replace the placeholder IDs below.
+# Copy the IDs printed by those commands into the fields below.
+# Without real IDs, `wrangler deploy` will fail — placeholders are intentional.
 [[kv_namespaces]]
 binding = "KV"
 id = "REPLACE_WITH_KV_ID"
@@ -14,7 +15,16 @@ preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
 
 # ── Routes — requires each domain's DNS to be orange-cloud on Cloudflare ────
 
-# fxtelegram.me
+# fxtelegram.org (primary)
+[[routes]]
+pattern = "fxtelegram.org/*"
+zone_name = "fxtelegram.org"
+
+[[routes]]
+pattern = "*.fxtelegram.org/*"
+zone_name = "fxtelegram.org"
+
+# fxtelegram.me (alternate)
 [[routes]]
 pattern = "fxtelegram.me/*"
 zone_name = "fxtelegram.me"
@@ -23,7 +33,7 @@ zone_name = "fxtelegram.me"
 pattern = "*.fxtelegram.me/*"
 zone_name = "fxtelegram.me"
 
-# fx-t.me
+# fx-t.me (alternate)
 [[routes]]
 pattern = "fx-t.me/*"
 zone_name = "fx-t.me"
@@ -32,7 +42,7 @@ zone_name = "fx-t.me"
 pattern = "*.fx-t.me/*"
 zone_name = "fx-t.me"
 
-# fixupt.me
+# fixupt.me (alternate)
 [[routes]]
 pattern = "fixupt.me/*"
 zone_name = "fixupt.me"
