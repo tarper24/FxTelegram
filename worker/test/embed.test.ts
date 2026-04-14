@@ -17,15 +17,32 @@ const baseMessage: MessageData = {
 const ORIGIN = 'https://fxtelegram.org';
 
 describe('buildEmbed', () => {
-  it('includes og:title with channel name', () => {
+  it('og:title uses post text (not channel name) when text is present', () => {
     const html = buildEmbed(baseMessage, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
     expect(html).toContain('<meta property="og:title"');
+    expect(html).toContain('Hello world');
+    // Channel name should NOT appear in og:title when text is available
+    expect(html).not.toMatch(/property="og:title"[^>]*content="[^"]*Durov/);
+  });
+
+  it('og:title falls back to channel name for media-only posts (no text)', () => {
+    const msg = { ...baseMessage, text: '' };
+    const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
     expect(html).toContain("Durov&#x27;s Channel");
   });
 
-  it('includes og:description with post text', () => {
+  it('og:description is empty for short text (avoids duplication with title)', () => {
     const html = buildEmbed(baseMessage, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
-    expect(html).toContain('Hello world');
+    expect(html).not.toContain('og:description');
+  });
+
+  it('og:title truncated and og:description set for long text', () => {
+    const longText = 'A'.repeat(300);
+    const msg = { ...baseMessage, text: longText };
+    const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
+    expect(html).toContain('og:title');
+    expect(html).toContain('og:description');
+    expect(html).toContain('…');
   });
 
   it('includes og:image for single image', () => {

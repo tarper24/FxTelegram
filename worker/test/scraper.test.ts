@@ -125,7 +125,7 @@ describe('scrapePost', () => {
     expect(data?.text).not.toContain('...');
   });
 
-  it('extractMessageText replaces display-text external link with href', async () => {
+  it('extractMessageText strips anchor tags and keeps display text', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>
     </head><body>
@@ -133,37 +133,17 @@ describe('scrapePost', () => {
     </body></html>`;
     mockFetch(html);
     const data = await scrapePost('test', 7);
-    expect(data?.text).toBe('Hello https://example.com');
+    expect(data?.text).toBe('Hello world');
   });
 
-  it('preserves bare URL from <a> tag where text is the URL', async () => {
+  it('strips anchor tags and keeps display text for all link types', async () => {
     const html = `<!DOCTYPE html><html><head><meta property="og:title" content="Test"/></head><body>
       <div class="tgme_widget_message" data-post="ch/1">
-        <div class="tgme_widget_message_text">Shop link: <a href="https://example.com">https://example.com</a></div>
+        <div class="tgme_widget_message_text">Shop: <a href="https://example.com">https://example.com</a> and <a href="https://t.me/other">@other</a> and <a href="https://shop.example.com">my shop</a></div>
       </div></body></html>`;
     mockFetch(html);
     const data = await scrapePost('ch', 1);
-    expect(data?.text).toBe('Shop link: https://example.com');
-  });
-
-  it('replaces display-text anchor with href URL for external links', async () => {
-    const html = `<!DOCTYPE html><html><head><meta property="og:title" content="Test"/></head><body>
-      <div class="tgme_widget_message" data-post="ch/1">
-        <div class="tgme_widget_message_text">Check out <a href="https://shop.example.com">my shop</a> today</div>
-      </div></body></html>`;
-    mockFetch(html);
-    const data = await scrapePost('ch', 1);
-    expect(data?.text).toBe('Check out https://shop.example.com today');
-  });
-
-  it('keeps display text for t.me links (mentions, hashtags)', async () => {
-    const html = `<!DOCTYPE html><html><head><meta property="og:title" content="Test"/></head><body>
-      <div class="tgme_widget_message" data-post="ch/1">
-        <div class="tgme_widget_message_text">Follow <a href="https://t.me/otherchannel">@otherchannel</a></div>
-      </div></body></html>`;
-    mockFetch(html);
-    const data = await scrapePost('ch', 1);
-    expect(data?.text).toBe('Follow @otherchannel');
+    expect(data?.text).toBe('Shop: https://example.com and @other and my shop');
   });
 
   it('extracts the correct post when multiple messages appear on the page', async () => {

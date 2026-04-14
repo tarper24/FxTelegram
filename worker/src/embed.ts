@@ -29,14 +29,24 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
   const oEmbedUrl = `${origin}/oembed?url=${encodeURIComponent(telegramUrl)}`;
 
-  const description = msg.file && !opts.textOnly
-    ? [msg.text, `📎 ${msg.file.name} · ${msg.file.mimeType}`].filter(Boolean).join('\n')
-    : msg.text;
+  // og:title uses post text so the channel name appears only once — via oEmbed
+  // author_name. Falls back to channel name for media-only posts (no text).
+  const TITLE_LIMIT = 256;
+  const title = msg.text
+    ? (msg.text.length > TITLE_LIMIT ? msg.text.slice(0, TITLE_LIMIT - 1) + '…' : msg.text)
+    : msg.channelName;
+
+  // og:description: only populated when title was truncated (avoids showing the
+  // same text twice) or when file metadata needs surfacing.
+  const bodyParts: string[] = [];
+  if (msg.text && msg.text.length > TITLE_LIMIT) bodyParts.push(msg.text);
+  if (msg.file && !opts.textOnly) bodyParts.push(`📎 ${msg.file.name} · ${msg.file.mimeType}`);
+  const description = bodyParts.join('\n');
 
   const tags: string[] = [
     meta('og:site_name', 'FxTelegram'),
-    meta('og:title', msg.channelName),
-    meta('og:description', description),
+    meta('og:title', title),
+    ...(description ? [meta('og:description', description)] : []),
     meta('og:url', telegramUrl),
     nameMeta('twitter:card', opts.textOnly ? 'summary' : 'summary_large_image'),
   ];
