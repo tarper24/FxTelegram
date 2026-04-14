@@ -98,12 +98,7 @@ export default {
       const privateUrl = parsed.channelUsername && parsed.messageId
         ? `https://t.me/${parsed.channelUsername}/${parsed.messageId}`
         : 'https://t.me';
-      const privateEmbed = `<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"/>
-<meta property="og:title" content="Private channel post"/>
-<meta property="og:description" content="Private channel post — view on Telegram"/>
-<meta property="og:site_name" content="FxTelegram"/>
-</head><body><a href="${privateUrl}">View on Telegram</a></body></html>`;
+      const privateEmbed = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta property="og:title" content="Private channel post"/><meta property="og:description" content="Private channel post — view on Telegram"/><meta property="og:site_name" content="FxTelegram"/></head><body><a href="${privateUrl}">View on Telegram</a></body></html>`;
       return htmlResponse(privateEmbed);
     }
 
@@ -209,12 +204,7 @@ function buildTelegramUrl(parsed: ReturnType<typeof parseRequest>): string | nul
 
 function buildFallbackEmbed(channelUsername: string, messageId: number): string {
   const telegramUrl = `https://t.me/${channelUsername}/${messageId}`;
-  return `<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"/>
-<meta property="og:title" content="@${channelUsername}"/>
-<meta property="og:description" content="View this post on Telegram"/>
-<meta property="og:site_name" content="FxTelegram"/>
-</head><body><a href="${telegramUrl}">View on Telegram</a></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta property="og:title" content="@${channelUsername}"/><meta property="og:description" content="View this post on Telegram"/><meta property="og:site_name" content="FxTelegram"/></head><body><a href="${telegramUrl}">View on Telegram</a></body></html>`;
 }
 
 function htmlResponse(html: string): Response {
