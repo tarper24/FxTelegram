@@ -36,6 +36,7 @@ export function parseRequest(request: Request): ParsedRequest {
   }
 
   const first = segments[0]!;
+  const decodedFirst = decodeURIComponent(first);
 
   // oEmbed endpoint
   if (first === 'oembed') {
@@ -44,10 +45,8 @@ export function parseRequest(request: Request): ParsedRequest {
 
   // Internal proxy: /video/channel/msgId
   if (first === 'video' && segments.length >= 3) {
+    if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
     const messageId = parseInt(segments[2]!, 10);
-    if (isNaN(messageId)) {
-      return { contentType: 'unknown', ...nullFields(), flags };
-    }
     return {
       contentType: 'video',
       channelUsername: segments[1]!,
@@ -63,10 +62,8 @@ export function parseRequest(request: Request): ParsedRequest {
 
   // Internal proxy: /mosaic/channel/msgId
   if (first === 'mosaic' && segments.length >= 3) {
+    if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
     const messageId = parseInt(segments[2]!, 10);
-    if (isNaN(messageId)) {
-      return { contentType: 'unknown', ...nullFields(), flags };
-    }
     return {
       contentType: 'mosaic',
       channelUsername: segments[1]!,
@@ -82,10 +79,8 @@ export function parseRequest(request: Request): ParsedRequest {
 
   // Private channel: /c/chatId/msgId
   if (first === 'c' && segments.length >= 3) {
+    if (!/^\d+$/.test(segments[2]!)) return { contentType: 'unknown', ...nullFields(), flags };
     const messageId = parseInt(segments[2]!, 10);
-    if (isNaN(messageId)) {
-      return { contentType: 'unknown', ...nullFields(), flags };
-    }
     return {
       contentType: 'private-post',
       channelUsername: null,
@@ -99,14 +94,14 @@ export function parseRequest(request: Request): ParsedRequest {
     };
   }
 
-  // Invite link: /+hash
-  if (first.startsWith('+')) {
+  // Invite link: /+hash (also handles %2B-encoded +)
+  if (decodedFirst.startsWith('+')) {
     return {
       contentType: 'invite',
       channelUsername: null,
       messageId: null,
       chatId: null,
-      inviteHash: first.slice(1),
+      inviteHash: decodedFirst.slice(1),
       photoIndex: null,
       langCode: null,
       isPrivate: false,

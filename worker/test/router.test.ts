@@ -88,6 +88,12 @@ describe('parseRequest', () => {
     expect(r.inviteHash).toBe('AbCdEfGh');
   });
 
+  it('parses %2B-encoded invite link /%2BAbCdEfGh', () => {
+    const r = parseRequest(req('https://fxtelegram.me/%2BAbCdEfGh'));
+    expect(r.contentType).toBe('invite');
+    expect(r.inviteHash).toBe('AbCdEfGh');
+  });
+
   it('parses oEmbed endpoint', () => {
     const r = parseRequest(req('https://fxtelegram.me/oembed?url=https://t.me/durov/1'));
     expect(r.contentType).toBe('oembed');
