@@ -1,0 +1,65 @@
+{
+  "name": "fxtelegram",
+  "main": "src/index.ts",
+  // nodejs_compat removed: no node: built-in imports in src/ and @cf-wasm/photon does not require it
+  "compatibility_date": "2026-04-13",
+
+  // ── KV namespace ─────────────────────────────────────────────────────────────
+  // One-time setup (requires Cloudflare auth):
+  //   npx wrangler kv namespace create KV
+  //   npx wrangler kv namespace create KV --preview
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "fbfa435109934a90b65453ce98afc8ff",
+      "preview_id": "5d106979a9664bd2a3b3a460312952ba"
+    }
+  ],
+
+  // ── Routes — requires each domain's DNS to be orange-cloud on Cloudflare ─────
+  "routes": [
+    // fxtelegram.org (primary)
+    { "pattern": "fxtelegram.org/*",   "zone_name": "fxtelegram.org", "custom_domain": true },
+    { "pattern": "*.fxtelegram.org/*", "zone_name": "fxtelegram.org", "custom_domain": true },
+
+    // fxtelegram.me (alternate)
+    { "pattern": "fxtelegram.me/*",    "zone_name": "fxtelegram.me",  "custom_domain": true },
+    { "pattern": "*.fxtelegram.me/*",  "zone_name": "fxtelegram.me",  "custom_domain": true },
+
+    // fx-t.me (alternate — short form, swap t.me for fx-t.me)
+    { "pattern": "fx-t.me/*",          "zone_name": "fx-t.me",        "custom_domain": true },
+    { "pattern": "*.fx-t.me/*",        "zone_name": "fx-t.me",        "custom_domain": true },
+
+    // fixupt.me (alternate)
+    { "pattern": "fixupt.me/*",        "zone_name": "fixupt.me",      "custom_domain": true },
+    { "pattern": "*.fixupt.me/*",      "zone_name": "fixupt.me",      "custom_domain": true },
+
+    // txlegram.me / txlegram.org — Discord s/telegram/txlegram shorthand
+    { "pattern": "txlegram.me/*",      "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "*.txlegram.me/*",    "zone_name": "txlegram.me",    "custom_domain": true },
+    { "pattern": "txlegram.org/*",     "zone_name": "txlegram.org",   "custom_domain": true },
+    { "pattern": "*.txlegram.org/*",   "zone_name": "txlegram.org",   "custom_domain": true }
+  ],
+
+  // ── Dev environment ───────────────────────────────────────────────────────────
+  // Deploy with: npx wrangler deploy --env dev
+  // Requires fxt.dev.tarper24.net DNS pointed at Cloudflare (orange-cloud).
+  // KV namespace setup:
+  //   npx wrangler kv namespace create KV --env dev
+  //   npx wrangler kv namespace create KV --env dev --preview
+  "env": {
+    "dev": {
+      "name": "fxtelegram-dev",
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "8f334390ae4348658e2aec6c66dd8288",
+          "preview_id": "8b5f3951388848fa80f31f47622a3b4f"
+        }
+      ],
+      "routes": [
+        { "pattern": "fxt.dev.tarper24.net/*", "zone_name": "tarper24.net", "custom_domain": true }
+      ]
+    }
+  }
+}
