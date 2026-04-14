@@ -16,6 +16,11 @@ export default {
     const isDiscord = UA.DISCORD.test(ua);
     const origin = new URL(request.url).origin;
 
+    // ── Root path: redirect to GitHub repo ───────────────────────────────
+    if (new URL(request.url).pathname === '/') {
+      return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
+    }
+
     // ── Internal proxy: video stream ──────────────────────────────────────
     if (parsed.contentType === 'video' && parsed.channelUsername && parsed.messageId) {
       return handleVideoProxy(parsed.channelUsername, parsed.messageId, request, env);
