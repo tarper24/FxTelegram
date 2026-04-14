@@ -6,11 +6,11 @@
 
   // ── KV namespace ─────────────────────────────────────────────────────────────
   // One-time setup (requires Cloudflare auth):
-  //   npx wrangler kv namespace create KV
-  //   npx wrangler kv namespace create KV --preview
+  //   npx wrangler kv namespace create FxTelegram-KV
+  //   npx wrangler kv namespace create FxTelegram-KV --preview
   "kv_namespaces": [
     {
-      "binding": "KV",
+      "binding": "FXTELEGRAM_KV",
       "id": "fbfa435109934a90b65453ce98afc8ff",
       "preview_id": "5d106979a9664bd2a3b3a460312952ba"
     }
@@ -66,14 +66,14 @@
   // Deploy with: npx wrangler deploy --env dev
   // Requires DNS pointed at Cloudflare (orange-cloud) for each hostname below.
   // KV namespace setup:
-  //   npx wrangler kv namespace create KV --env dev
-  //   npx wrangler kv namespace create KV --env dev --preview
+  //   npx wrangler kv namespace create FxTelegram-KV --env dev
+  //   npx wrangler kv namespace create FxTelegram-KV --env dev --preview
   "env": {
     "dev": {
       "name": "fxtelegram-dev",
       "kv_namespaces": [
         {
-          "binding": "KV",
+          "binding": "FXTELEGRAM_KV",
           "id": "8f334390ae4348658e2aec6c66dd8288",
           "preview_id": "8b5f3951388848fa80f31f47622a3b4f"
         }

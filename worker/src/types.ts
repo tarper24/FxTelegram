@@ -60,7 +60,7 @@ export interface MessageData {
 }
 
 export interface Env {
-  KV: KVNamespace;
+  FXTELEGRAM_KV: KVNamespace;
   VPS_API_URL?: string;
   VPS_API_SECRET?: string;
 }

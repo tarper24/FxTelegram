@@ -8,7 +8,7 @@ export async function handleVideoProxy(
   request: Request,
   env: Env
 ): Promise<Response> {
-  const cdnUrl = await getCached<string>(env.KV, videoKey(channelUsername, messageId));
+  const cdnUrl = await getCached<string>(env.FXTELEGRAM_KV, videoKey(channelUsername, messageId));
 
   if (!cdnUrl) {
     return new Response('Video not found', { status: 404 });
@@ -29,12 +29,12 @@ export async function handleVideoProxy(
   try {
     head = await fetch(cdnUrl, { method: 'HEAD' });
   } catch {
-    await env.KV.delete(videoKey(channelUsername, messageId));
+    await env.FXTELEGRAM_KV.delete(videoKey(channelUsername, messageId));
     return new Response('Video upstream unreachable', { status: 502 });
   }
 
   if (!head.ok) {
-    await env.KV.delete(videoKey(channelUsername, messageId));
+    await env.FXTELEGRAM_KV.delete(videoKey(channelUsername, messageId));
     return new Response('Video unavailable', { status: 502 });
   }
 

@@ -28,7 +28,7 @@ export default {
 
     // ── Internal proxy: mosaic image ──────────────────────────────────────
     if (parsed.contentType === 'mosaic' && parsed.channelUsername && parsed.messageId) {
-      const cached = await getCachedBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId));
+      const cached = await getCachedBinary(env.FXTELEGRAM_KV, mosaicKey(parsed.channelUsername, parsed.messageId));
       if (cached) {
         return new Response(cached, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' } });
       }
@@ -37,7 +37,7 @@ export default {
       const mosaicBytes = await buildMosaic(msgData.images.map(i => i.url));
       // KV values max out at 25 MiB — guard before writing
       if (mosaicBytes.byteLength <= 25 * 1024 * 1024) {
-        ctx.waitUntil(setCacheBinary(env.KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
+        ctx.waitUntil(setCacheBinary(env.FXTELEGRAM_KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
       }
       return new Response(mosaicBytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' } });
     }
@@ -103,7 +103,7 @@ export default {
 
     // ── Path modifier: translate ──────────────────────────────────────────
     if (parsed.langCode && msg.text) {
-      msg = { ...msg, text: await translateText(msg.text, parsed.langCode, env.KV) };
+      msg = { ...msg, text: await translateText(msg.text, parsed.langCode, env.FXTELEGRAM_KV) };
     }
 
     // ── Subdomain: direct media ───────────────────────────────────────────
@@ -149,14 +149,14 @@ async function fetchOrScrape(
   ctx: ExecutionContext
 ): Promise<MessageData | null> {
   const key = postKey(channelUsername, messageId);
-  const cached = await getCached<MessageData>(env.KV, key);
+  const cached = await getCached<MessageData>(env.FXTELEGRAM_KV, key);
   if (cached) return cached;
 
   const fresh = await scrapePost(channelUsername, messageId);
   if (fresh) {
-    ctx.waitUntil(setCache(env.KV, key, fresh, TTL.POST));
+    ctx.waitUntil(setCache(env.FXTELEGRAM_KV, key, fresh, TTL.POST));
     if (fresh.video?.url) {
-      ctx.waitUntil(setCache(env.KV, videoKey(channelUsername, messageId), fresh.video.url, TTL.VIDEO));
+      ctx.waitUntil(setCache(env.FXTELEGRAM_KV, videoKey(channelUsername, messageId), fresh.video.url, TTL.VIDEO));
     }
   }
   return fresh;

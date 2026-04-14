@@ -12,7 +12,7 @@ const kv = {
   getWithMetadata: vi.fn(),
 } as unknown as KVNamespace;
 
-const env: Env = { KV: kv };
+const env: Env = { FXTELEGRAM_KV: kv };
 
 describe('handleVideoProxy', () => {
   it('returns 404 when video URL not in KV', async () => {

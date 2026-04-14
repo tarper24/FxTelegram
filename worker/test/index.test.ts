@@ -95,7 +95,7 @@ afterEach(() => vi.clearAllMocks());
 
 describe('Human browser redirect', () => {
   it('redirects to t.me for regular browser UA', async () => {
-    const env: Env = { KV: makeKv() };
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
     const res = await worker.fetch(req('/durov/123', HUMAN_UA), env, makeCtx());
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('https://t.me/durov/123');
@@ -105,7 +105,7 @@ describe('Human browser redirect', () => {
 describe('Bot — cache hit', () => {
   it('returns 200 embed HTML without calling scrapePost', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
     const res = await worker.fetch(req('/durov/123'), env, ctx);
     expect(res.status).toBe(200);
@@ -120,7 +120,7 @@ describe('Bot — cache miss, scrape success', () => {
   it('returns 200 embed HTML and schedules KV write', async () => {
     const kv = makeKv(null);
     vi.mocked(scrapePost).mockResolvedValue(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
     const res = await worker.fetch(req('/durov/123'), env, ctx);
     expect(res.status).toBe(200);
@@ -135,7 +135,7 @@ describe('Bot — scrape failure (fallback embed)', () => {
   it('returns 200 with fallback embed containing channel name', async () => {
     const kv = makeKv(null);
     vi.mocked(scrapePost).mockResolvedValue(null);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -146,7 +146,7 @@ describe('Bot — scrape failure (fallback embed)', () => {
 describe('Discord native gallery', () => {
   it('returns multiple og:image tags for Discordbot + album', async () => {
     const kv = makeKv(ALBUM_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123', 'Discordbot/2.0'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -160,7 +160,7 @@ describe('Discord native gallery', () => {
 describe('Mosaic path (non-Discord bot)', () => {
   it('uses /mosaic/ URL in embed for Slackbot + album', async () => {
     const kv = makeKv(ALBUM_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123', SLACK_UA), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -174,7 +174,7 @@ describe('Mosaic path (non-Discord bot)', () => {
 describe('Video path', () => {
   it('includes og:video proxy URL in embed', async () => {
     const kv = makeKv(VIDEO_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -186,7 +186,7 @@ describe('Video path', () => {
 describe('Text-only subdomain (t. prefix)', () => {
   it('returns summary card with no og:image', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     // t. subdomain → t.fxtelegram.org
     const res = await worker.fetch(
       new Request('https://t.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
@@ -203,7 +203,7 @@ describe('Text-only subdomain (t. prefix)', () => {
 describe('Direct media subdomain (d. prefix)', () => {
   it('redirects to CDN image URL for bot + image message', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
       new Request('https://d.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
@@ -216,7 +216,7 @@ describe('Direct media subdomain (d. prefix)', () => {
 describe('API subdomain (api. prefix)', () => {
   it('returns 200 JSON response with message data', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
       new Request('https://api.fxtelegram.org/durov/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
@@ -232,7 +232,7 @@ describe('API subdomain (api. prefix)', () => {
 describe('oEmbed endpoint', () => {
   it('returns 200 JSON with provider_url matching request origin', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
       new Request(`${ORIGIN}/oembed?url=https://t.me/durov/123`, { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
@@ -247,7 +247,7 @@ describe('oEmbed endpoint', () => {
 
 describe('Profile redirect for bots', () => {
   it('redirects to t.me/<username> for profile path', async () => {
-    const env: Env = { KV: makeKv() };
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
     const res = await worker.fetch(req('/durov', BOT_UA), env, makeCtx());
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('https://t.me/durov');
@@ -256,7 +256,7 @@ describe('Profile redirect for bots', () => {
 
 describe('Invite redirect for bots', () => {
   it('redirects to t.me/+hash for invite path', async () => {
-    const env: Env = { KV: makeKv() };
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
     const res = await worker.fetch(req('/+AbCdEfGh', BOT_UA), env, makeCtx());
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('https://t.me/+AbCdEfGh');
@@ -265,7 +265,7 @@ describe('Invite redirect for bots', () => {
 
 describe('Private post fallback embed', () => {
   it('returns 200 with embed HTML for private-post path', async () => {
-    const env: Env = { KV: makeKv() };
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
     const res = await worker.fetch(req('/c/-100123/456', BOT_UA), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -276,7 +276,7 @@ describe('Private post fallback embed', () => {
 describe('Photo modifier', () => {
   it('selects the specified photo index from album', async () => {
     const kv = makeKv(ALBUM_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123/photo/2'), env, makeCtx());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -291,7 +291,7 @@ describe('Language modifier', () => {
   it('calls translateText with correct target language', async () => {
     const kv = makeKv(BASE_MSG);
     vi.mocked(translateText).mockResolvedValue('Bonjour le monde');
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(req('/durov/123/fr'), env, makeCtx());
     expect(res.status).toBe(200);
     expect(vi.mocked(translateText)).toHaveBeenCalledWith('Hello world', 'fr', kv);
@@ -315,7 +315,7 @@ describe('Mosaic endpoint (/mosaic/channel/id)', () => {
       list: vi.fn(),
       getWithMetadata: vi.fn(),
     } as unknown as KVNamespace;
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const ctx = makeCtx();
     const res = await worker.fetch(req('/mosaic/durov/123'), env, ctx);
     expect(res.status).toBe(200);
@@ -327,7 +327,7 @@ describe('Mosaic endpoint (/mosaic/channel/id)', () => {
 describe('Video endpoint (/video/channel/id)', () => {
   it('delegates to handleVideoProxy', async () => {
     vi.mocked(handleVideoProxy).mockResolvedValue(new Response('video', { status: 200 }));
-    const env: Env = { KV: makeKv() };
+    const env: Env = { FXTELEGRAM_KV: makeKv() };
     const res = await worker.fetch(req('/video/durov/123'), env, makeCtx());
     expect(vi.mocked(handleVideoProxy)).toHaveBeenCalledWith('durov', 123, expect.any(Request), env);
     expect(res.status).toBe(200);
@@ -337,7 +337,7 @@ describe('Video endpoint (/video/channel/id)', () => {
 describe('Origin propagation', () => {
   it('oEmbed URL in embed HTML uses request origin, not hardcoded fxtelegram.me', async () => {
     const kv = makeKv(BASE_MSG);
-    const env: Env = { KV: kv };
+    const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
       new Request('https://fx-t.me/durov/123', { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
