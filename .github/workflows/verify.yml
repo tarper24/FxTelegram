@@ -1,0 +1,35 @@
+name: Verify
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: Test & Type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install dependencies
+        working-directory: worker
+        run: npm ci
+
+      - name: Run tests
+        working-directory: worker
+        run: npm test
+
+      - name: Type-check (tsc --noEmit)
+        working-directory: worker
+        # wrangler ships its own tsc wrapper; calling tsc directly keeps this
+        # step independent of wrangler internals.
+        run: npx tsc --noEmit

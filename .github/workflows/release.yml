@@ -1,0 +1,46 @@
+name: Deploy to Production
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  deploy-prod:
+    name: Test, Type-check & Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install dependencies
+        working-directory: worker
+        run: npm ci
+
+      - name: Run tests
+        working-directory: worker
+        run: npm test
+
+      - name: Type-check (tsc --noEmit)
+        working-directory: worker
+        # wrangler ships its own tsc wrapper; calling tsc directly keeps this
+        # step independent of wrangler internals.
+        run: npx tsc --noEmit
+
+      # cloudflare/wrangler-action@v3.14.1 — pinned to latest tag as of 2026-04-14.
+      # Intentionally NOT passing `--env`; this deploys to the prod configuration
+      # defined by the root-level routes in wrangler.toml (not [env.dev]).
+      - name: Deploy to Production via Wrangler
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy

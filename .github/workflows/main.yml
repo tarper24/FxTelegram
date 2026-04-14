@@ -1,0 +1,45 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-dev:
+    name: Test, Type-check & Deploy to Dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install dependencies
+        working-directory: worker
+        run: npm ci
+
+      - name: Run tests
+        working-directory: worker
+        run: npm test
+
+      - name: Type-check (tsc --noEmit)
+        working-directory: worker
+        # wrangler ships its own tsc wrapper; calling tsc directly keeps this
+        # step independent of wrangler internals.
+        run: npx tsc --noEmit
+
+      # cloudflare/wrangler-action@v3.14.1 — pinned to latest tag as of 2026-04-14.
+      # Deploys to the [env.dev] block in wrangler.toml.
+      - name: Deploy to Dev via Wrangler
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy --env dev
