@@ -75,7 +75,7 @@ function extractMessageTitle(innerHtml: string): string | null {
   const rest = innerHtml.slice(m[0].length);
   // Require a <br>, newline, or end of content immediately after the bold block
   if (rest.trim() && !/^\s*(?:<br\s*\/?>|\n)/.test(rest)) return null;
-  return m[2].replace(/<[^>]+>/g, '').trim() || null;
+  return m[2]!.replace(/<[^>]+>/g, '').trim() || null;
 }
 
 function extractPublishedAt(html: string): string | null {
