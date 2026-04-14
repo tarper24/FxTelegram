@@ -1,0 +1,16 @@
+name = "fxtelegram"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Create with: wrangler kv namespace create KV
+# Fill in the IDs returned by that command
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+
+# Routes — add zone_name for each domain once pointed at Cloudflare
+# [[routes]]
+# pattern = "fxtelegram.me/*"
+# zone_name = "fxtelegram.me"
