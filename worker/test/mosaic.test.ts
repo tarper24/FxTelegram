@@ -28,9 +28,11 @@ const TINY_JPEG = new Uint8Array([
 function mockImageFetch() {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(new Response(TINY_JPEG, {
-      headers: { 'Content-Type': 'image/jpeg' },
-    }))
+    vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(TINY_JPEG.slice(), {
+        headers: { 'Content-Type': 'image/jpeg' },
+      }))
+    )
   );
 }
 
@@ -57,8 +59,8 @@ describe('buildMosaic', () => {
   });
 
   it('caps at 4 images even if more are passed', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue(
-      new Response(TINY_JPEG, { headers: { 'Content-Type': 'image/jpeg' } })
+    const fetchSpy = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(TINY_JPEG.slice(), { headers: { 'Content-Type': 'image/jpeg' } }))
     );
     vi.stubGlobal('fetch', fetchSpy);
     await buildMosaic(['a','b','c','d','e','f'].map(x => `https://cdn.tg/${x}.jpg`));

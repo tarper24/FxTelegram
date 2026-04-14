@@ -7,7 +7,6 @@ import {
 } from '@cf-wasm/photon';
 import { LIMITS } from './constants';
 
-const MAX_MOSAIC_IMAGES = 4;
 const CELL_W = LIMITS.MOSAIC_CELL_W; // 600
 const CELL_H = LIMITS.MOSAIC_CELL_H; // 400
 
@@ -21,23 +20,36 @@ function createWhiteCanvas(width: number, height: number): PhotonImage {
 }
 
 /**
- * Fetch image bytes from a URL and decode into a PhotonImage.
- * Falls back to a white placeholder cell on any failure:
- *   - Network/body-read errors
- *   - WASM JPEG decoder panics (RuntimeError: unreachable on corrupt images)
+ * Fetch raw image bytes from a URL.
+ * Returns null on any network or body-read failure.
  */
-async function fetchPhotonImage(url: string): Promise<PhotonImage> {
+async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
   try {
     const response = await fetch(url);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    return PhotonImage.new_from_byteslice(bytes);
+    return new Uint8Array(await response.arrayBuffer());
   } catch {
-    return createWhiteCanvas(CELL_W, CELL_H);
+    return null;
   }
 }
 
 /**
- * Composite up to 4 image URLs into a mosaic grid and return JPEG bytes.
+ * Decode raw bytes into a PhotonImage.
+ * Falls back to a white placeholder cell if the WASM JPEG decoder panics
+ * (RuntimeError: unreachable on corrupt or incomplete images).
+ */
+function decodeOrPlaceholder(bytes: Uint8Array | null): PhotonImage {
+  if (bytes !== null) {
+    try {
+      return PhotonImage.new_from_byteslice(bytes);
+    } catch {
+      // WASM decode failure — fall through to placeholder
+    }
+  }
+  return createWhiteCanvas(CELL_W, CELL_H);
+}
+
+/**
+ * Composite up to MAX_MOSAIC_IMAGES image URLs into a grid and return JPEG bytes.
  *
  * Layout:
  *   1–2 images → 1 row × 2 cols  (1200 × 400)
@@ -46,36 +58,45 @@ async function fetchPhotonImage(url: string): Promise<PhotonImage> {
 export async function buildMosaic(urls: string[]): Promise<Uint8Array> {
   await initPhoton.ensure();
 
-  const capped = urls.slice(0, MAX_MOSAIC_IMAGES);
+  const capped = urls.slice(0, LIMITS.MAX_MOSAIC_IMAGES);
   const count = capped.length;
 
-  const cols = 2;
   const rows = count <= 2 ? 1 : 2;
-  const canvasW = cols * CELL_W;
+  const canvasW = 2 * CELL_W;
   const canvasH = rows * CELL_H;
 
-  const canvas = createWhiteCanvas(canvasW, canvasH);
+  // Fetch all images in parallel for production performance.
+  const allBytes = await Promise.all(capped.map(fetchImageBytes));
+  const images = allBytes.map(decodeOrPlaceholder);
 
-  // Fetch sequentially to avoid body-already-read errors when a shared mock
-  // Response is returned (test environment) or CDN rate-limits concurrency.
-  const images: PhotonImage[] = [];
-  for (const url of capped) {
-    images.push(await fetchPhotonImage(url));
+  // Track images not yet freed so we can clean up if resize/watermark throws.
+  const pendingFree: PhotonImage[] = [...images];
+  let canvas: PhotonImage | null = null;
+
+  try {
+    canvas = createWhiteCanvas(canvasW, canvasH);
+
+    for (let i = 0; i < images.length; i++) {
+      const cell = resize(images[i]!, CELL_W, CELL_H, SamplingFilter.Lanczos3);
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      watermark(canvas, cell, BigInt(col * CELL_W), BigInt(row * CELL_H));
+      cell.free();
+      images[i]!.free();
+      pendingFree.shift(); // successfully freed — remove from head
+    }
+
+    const result = canvas.get_bytes_jpeg(85);
+    canvas.free();
+    return result;
+  } catch (err) {
+    // Free any images not yet freed due to early throw.
+    for (const img of pendingFree) {
+      try { img.free(); } catch { /* ignore double-free */ }
+    }
+    if (canvas) {
+      try { canvas.free(); } catch { /* ignore */ }
+    }
+    throw err;
   }
-
-  for (let i = 0; i < images.length; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = col * CELL_W;
-    const y = row * CELL_H;
-
-    const cell = resize(images[i], CELL_W, CELL_H, SamplingFilter.Lanczos3);
-    watermark(canvas, cell, BigInt(x), BigInt(y));
-    cell.free();
-    images[i].free();
-  }
-
-  const jpeg = canvas.get_bytes_jpeg(85);
-  canvas.free();
-  return jpeg;
 }
