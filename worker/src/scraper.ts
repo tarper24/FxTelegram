@@ -17,6 +17,41 @@ function extractMeta(html: string, property: string): string | null {
   return m?.[1] ?? null;
 }
 
+function extractVideoUrl(html: string): string | undefined {
+  const tagMatch = html.match(/<video\b[^>]*tgme_widget_message_video[^>]*>/);
+  if (!tagMatch) return undefined;
+  const srcMatch = tagMatch[0].match(/\bsrc="([^"]+)"/);
+  return srcMatch?.[1];
+}
+
+function extractVideoThumb(html: string): { url: string; width?: number; height?: number } | undefined {
+  const tagMatch = html.match(/<[a-z]+\b[^>]*tgme_widget_message_video_thumb[^>]*>/);
+  if (!tagMatch || !tagMatch[0]) return undefined;
+  const styleMatch = tagMatch[0].match(/\bstyle="([^"]+)"/);
+  if (!styleMatch || !styleMatch[1]) return undefined;
+  const style = styleMatch[1];
+  const bgMatch = style.match(/background-image:url\('([^']+)'\)/);
+  if (!bgMatch || !bgMatch[1]) return undefined;
+  const widthMatch = style.match(/width:(\d+)px/);
+  const heightMatch = style.match(/height:(\d+)px/);
+  return {
+    url: bgMatch[1],
+    width: widthMatch?.[1] !== undefined ? parseInt(widthMatch[1], 10) : undefined,
+    height: heightMatch?.[1] !== undefined ? parseInt(heightMatch[1], 10) : undefined,
+  };
+}
+
+function extractMessageText(html: string): string {
+  const divMatch = html.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+  if (divMatch?.[1]) {
+    return divMatch[1]
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+  }
+  return extractMeta(html, 'og:description') ?? '';
+}
+
 function extractAlbumImages(html: string): ImageData[] {
   const images: ImageData[] = [];
   // Match <a> tags containing the photo_wrap class — handles any attribute order
@@ -50,17 +85,16 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const html = await response.text();
 
   const channelName = extractMeta(html, 'og:title') ?? channelUsername;
-  const text = extractMeta(html, 'og:description') ?? '';
+  const text = extractMessageText(html);
   const ogImage = extractMeta(html, 'og:image');
 
   // Album images
   const albumImages = extractAlbumImages(html);
 
   // Video
-  const videoSrcMatch = html.match(/class="tgme_widget_message_video"[^>]*src="([^"]+)"/);
-  const videoThumbMatch = html.match(/class="tgme_widget_message_video_thumb"[^>]*style="([^"]+)"/);
-  const videoUrl = videoSrcMatch?.[1] ?? null;
-  const videoThumb = extractBgUrl(videoThumbMatch?.[1] ?? null);
+  const videoUrl = extractVideoUrl(html) ?? null;
+  const videoThumbData = extractVideoThumb(html);
+  const videoThumb = videoThumbData?.url ?? null;
 
   // File
   const fileNameMatch = html.match(/class="tgme_widget_message_document_title"[^>]*>([^<]+)</);
@@ -93,8 +127,8 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     data.video = {
       url: videoUrl,
       thumbnailUrl: videoThumb ?? '',
-      width: 0,
-      height: 0,
+      width: videoThumbData?.width ?? 0,
+      height: videoThumbData?.height ?? 0,
       durationSeconds: 0,
     };
     data.images = [];
