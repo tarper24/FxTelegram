@@ -1,5 +1,4 @@
-import { getCached } from './cache';
-import { videoKey } from './cache';
+import { getCached, videoKey } from './cache';
 import { LIMITS } from './constants';
 import type { Env } from './types';
 
@@ -16,8 +15,14 @@ export async function handleVideoProxy(
   }
 
   // HEAD request to check file size
-  const head = await fetch(cdnUrl, { method: 'HEAD' });
-  const contentLength = parseInt(head.headers.get('Content-Length') ?? '0', 10);
+  let head: Response;
+  try {
+    head = await fetch(cdnUrl, { method: 'HEAD' });
+  } catch {
+    return new Response('Video upstream unreachable', { status: 502 });
+  }
+  const rawLength = head.headers.get('Content-Length');
+  const contentLength = rawLength !== null ? parseInt(rawLength, 10) : Infinity;
 
   if (contentLength > LIMITS.VIDEO_REDIRECT_BYTES) {
     return Response.redirect(cdnUrl, 302);

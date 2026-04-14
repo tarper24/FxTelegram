@@ -44,6 +44,23 @@ describe('handleVideoProxy', () => {
     expect(res.headers.get('Accept-Ranges')).toBe('bytes');
   });
 
+  it('returns 502 when HEAD fetch throws', async () => {
+    vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/video.mp4');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
+    const res = await handleVideoProxy('durov', 1, new Request('https://fxtelegram.me/video/durov/1'), env);
+    expect(res.status).toBe(502);
+  });
+
+  it('redirects when Content-Length is absent from HEAD', async () => {
+    vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/video.mp4');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(null, { headers: {} })  // no Content-Length
+    ));
+    const res = await handleVideoProxy('durov', 1, new Request('https://fxtelegram.me/video/durov/1'), env);
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('https://cdn.tg/video.mp4');
+  });
+
   it('passes Range header through to upstream', async () => {
     vi.mocked(kv.get).mockResolvedValue('https://cdn.tg/small.mp4');
     const fetchSpy = vi.fn()
