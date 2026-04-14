@@ -1,6 +1,7 @@
 import type { MessageData } from './types';
 
 interface EmbedOptions {
+  origin: string;
   forceMosaic: boolean;
   textOnly: boolean;
   isDiscord: boolean;
@@ -24,7 +25,7 @@ function nameMeta(name: string, content: string): string {
 }
 
 export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
-  const origin = 'https://fxtelegram.me';
+  const { origin } = opts;
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
   const oEmbedUrl = `${origin}/oembed?url=${encodeURIComponent(telegramUrl)}`;
 
@@ -89,12 +90,12 @@ ${tags.join('\n')}
   return html;
 }
 
-export function buildOEmbedJson(channelUsername: string, channelName: string, messageId: number) {
+export function buildOEmbedJson(channelUsername: string, channelName: string, messageId: number, origin = 'https://fxtelegram.me') {
   return {
     type: 'link' as const,
     version: '1.0' as const,
     provider_name: 'FxTelegram',
-    provider_url: 'https://fxtelegram.me',
+    provider_url: origin,
     author_name: channelName,
     author_url: `https://t.me/${channelUsername}/${messageId}`,
   };
