@@ -10,8 +10,8 @@ compatibility_date = "2026-04-13"
 # Without real IDs, `wrangler deploy` will fail — placeholders are intentional.
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_KV_ID"
-preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+id = "fbfa435109934a90b65453ce98afc8ff"
+preview_id = "5d106979a9664bd2a3b3a460312952ba"
 
 # ── Routes — requires each domain's DNS to be orange-cloud on Cloudflare ────
 
@@ -62,8 +62,8 @@ name = "fxtelegram-dev"
 
 [[env.dev.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_DEV_KV_ID"
-preview_id = "REPLACE_WITH_DEV_KV_PREVIEW_ID"
+id = "8f334390ae4348658e2aec6c66dd8288"
+preview_id = "8b5f3951388848fa80f31f47622a3b4f"
 
 [[env.dev.routes]]
 pattern = "fxt.dev.tarper24.net/*"
