@@ -72,4 +72,22 @@ describe('scrapePost', () => {
     expect(data?.images[0]?.url).toBe('https://cdn.telegram.org/a.jpg');
     expect(data?.images[2]?.url).toBe('https://cdn.telegram.org/c.jpg');
   });
+
+  it('extracts album images when style precedes class', async () => {
+    const html = `<!DOCTYPE html><html><head>
+    <meta property="og:title" content="Photo Channel"/>
+  </head><body>
+    <a style="background-image:url('https://cdn.telegram.org/x.jpg')" class="tgme_widget_message_photo_wrap"></a>
+    <a style="background-image:url('https://cdn.telegram.org/y.jpg')" class="tgme_widget_message_photo_wrap"></a>
+  </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('photos', 10);
+    expect(data?.images).toHaveLength(2);
+    expect(data?.hasAlbum).toBe(true);
+  });
+
+  it('returns null on network error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network failure')));
+    expect(await scrapePost('durov', 1)).toBeNull();
+  });
 });

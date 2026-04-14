@@ -19,10 +19,12 @@ function extractMeta(html: string, property: string): string | null {
 
 function extractAlbumImages(html: string): ImageData[] {
   const images: ImageData[] = [];
-  const photoRe = /class="tgme_widget_message_photo_wrap"[^>]*style="([^"]+)"/g;
+  // Match <a> tags containing the photo_wrap class — handles any attribute order
+  const tagRe = /<a\b[^>]*tgme_widget_message_photo_wrap[^>]*>/g;
   let m: RegExpExecArray | null;
-  while ((m = photoRe.exec(html)) !== null) {
-    const url = extractBgUrl(m[1] ?? null);
+  while ((m = tagRe.exec(html)) !== null) {
+    const styleMatch = m[0].match(/style="([^"]*)"/);
+    const url = extractBgUrl(styleMatch?.[1] ?? null);
     if (url) images.push({ url, width: 0, height: 0 });
   }
   return images;
