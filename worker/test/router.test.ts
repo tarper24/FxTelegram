@@ -95,7 +95,7 @@ describe('parseRequest', () => {
   });
 
   it('parses oEmbed endpoint', () => {
-    const r = parseRequest(req('https://fxtelegram.me/oembed?url=https://t.me/durov/1'));
+    const r = parseRequest(req('https://fxtelegram.me/OwOembed?url=https://t.me/durov/1'));
     expect(r.contentType).toBe('oembed');
   });
 

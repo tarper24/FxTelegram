@@ -38,8 +38,8 @@ export function parseRequest(request: Request): ParsedRequest {
   const first = segments[0]!;
   const decodedFirst = decodeURIComponent(first);
 
-  // oEmbed endpoint
-  if (first === 'oembed') {
+  // oEmbed endpoint (Discord Mastodon-compatible path)
+  if (first === 'OwOembed') {
     return { contentType: 'oembed', ...nullFields(), flags };
   }
 

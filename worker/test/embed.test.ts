@@ -154,7 +154,7 @@ describe('buildEmbed', () => {
 describe('buildOEmbedJson', () => {
   it('returns correct structure', () => {
     const json = buildOEmbedJson('durov', "Durov's Channel", 123, 'https://fxtelegram.org');
-    expect(json.type).toBe('link');
+    expect(json.type).toBe('rich');
     expect(json.version).toBe('1.0');
     expect(json.provider_name).toBe('FxTelegram');
     expect(json.author_name).toBe("Durov's Channel");

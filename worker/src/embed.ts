@@ -27,7 +27,7 @@ function nameMeta(name: string, content: string): string {
 export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const { origin } = opts;
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
-  const oEmbedUrl = `${origin}/oembed?url=${encodeURIComponent(telegramUrl)}`;
+  const oEmbedUrl = `${origin}/OwOembed?url=${encodeURIComponent(telegramUrl)}`;
 
   // og:title: use the scraped bold opener when available; otherwise full text
   // (truncated). Channel name is the fallback for media-only posts.
@@ -137,7 +137,7 @@ export function buildOEmbedJson(
 ) {
   const date = formatDate(publishedAt);
   return {
-    type: 'link' as const,
+    type: 'rich' as const,
     version: '1.0' as const,
     provider_name: date ? `FxTelegram • ${date}` : 'FxTelegram',
     provider_url: 'https://github.com/tarper24/FxTelegram',

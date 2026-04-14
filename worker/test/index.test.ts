@@ -234,14 +234,14 @@ describe('oEmbed endpoint', () => {
     const kv = makeKv(BASE_MSG);
     const env: Env = { FXTELEGRAM_KV: kv };
     const res = await worker.fetch(
-      new Request(`${ORIGIN}/oembed?url=https://t.me/durov/123`, { headers: { 'User-Agent': BOT_UA } }),
+      new Request(`${ORIGIN}/OwOembed?url=https://t.me/durov/123`, { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('application/json');
     const json = await res.json() as Record<string, string>;
     expect(json.provider_url).toBe('https://github.com/tarper24/FxTelegram');
-    expect(json.type).toBe('link');
+    expect(json.type).toBe('rich');
   });
 });
 
@@ -344,7 +344,7 @@ describe('Origin propagation', () => {
     );
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('https://fx-t.me/oembed');
-    expect(html).not.toContain('https://fxtelegram.me/oembed');
+    expect(html).toContain('https://fx-t.me/OwOembed');
+    expect(html).not.toContain('https://fxtelegram.me/OwOembed');
   });
 });
