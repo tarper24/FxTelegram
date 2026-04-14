@@ -6,9 +6,11 @@ updates:
     directory: "/worker"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "⬆️"
     groups:
-      # Batch patch and minor bumps into a single PR to reduce noise
-      non-major:
+      # Batch minor and patch bumps into a single PR to reduce noise
+      minor:
         update-types:
           - "minor"
           - "patch"
@@ -18,3 +20,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "⬆️"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
