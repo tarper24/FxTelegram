@@ -4,25 +4,26 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Replace `t.me` with `fxtelegram.me` in any Telegram link and get a rich embed instead of a bare URL preview.
+Replace `t.me` with `fx-t.me` in any Telegram link and get a rich embed instead of a bare URL preview.
 
 ```
 https://t.me/channelname/123
-         ↓
-https://fxtelegram.me/channelname/123
+        ↓
+https://fx-t.me/channelname/123
 ```
 
 ---
 
 ## Domains
 
-All three domains are equivalent — use whichever you prefer:
-
 | Domain | Notes |
 |---|---|
-| [fxtelegram.me](https://fxtelegram.me) | Primary |
-| [fx-t.me](https://fx-t.me) | Short form |
-| [fixupt.me](https://fixupt.me) | Alternative |
+| [fxtelegram.org](https://fxtelegram.org) | Primary |
+| [fx-t.me](https://fx-t.me) | Short form — swap `t.me` for `fx-t.me` |
+| [fxtelegram.me](https://fxtelegram.me) | Alternate |
+| [fixupt.me](https://fixupt.me) | Alternate |
+| [txlegram.me](https://txlegram.me) | Discord `s/telegram/txlegram` |
+| [txlegram.org](https://txlegram.org) | Discord `s/telegram/txlegram` |
 
 ---
 
@@ -36,11 +37,32 @@ All three domains are equivalent — use whichever you prefer:
 
 ---
 
+## Discord tips
+
+**Quick swap — `fx-t.me`:**  
+Change `t.me` to `fx-t.me`. Same length, one letter different, works inline.
+
+```
+https://t.me/channelname/123  →  https://fx-t.me/channelname/123
+```
+
+**Fix someone else's link — `s/telegram/txlegram`:**  
+If a link uses `telegram.me` or `telegram.org`, reply with the Discord edit shorthand and it rewrites the link automatically.
+
+```
+s/telegram/txlegram
+```
+
+`telegram.me/channelname/123` → `txlegram.me/channelname/123`  
+`telegram.org/channelname/123` → `txlegram.org/channelname/123`
+
+---
+
 ## How it works
 
 FxTelegram acts as a lightweight proxy between the platform (Discord, Slack, etc.) and Telegram:
 
-1. Platform bot hits `fxtelegram.me/channelname/123`
+1. Platform bot hits `fx-t.me/channelname/123`
 2. Worker fetches content from Telegram, extracts media and metadata
 3. Returns enriched OpenGraph tags — image, video, title, description
 4. Platform renders a rich embed; regular users are sent straight to `t.me`
