@@ -52,6 +52,7 @@ export interface MessageData {
   channelAvatarUrl: string | null;
   messageId: number;
   publishedAt: string | null; // ISO 8601 from <time datetime="...">
+  title?: string | null;      // bold opener line, if detected
   text: string;
   images: ImageData[];
   video: VideoData | null;

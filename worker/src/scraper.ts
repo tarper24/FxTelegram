@@ -64,6 +64,20 @@ function extractMessageText(html: string): string {
   return extractMeta(html, 'og:description') ?? '';
 }
 
+/**
+ * Detect a bold/strong opener as a de-facto post title.
+ * Returns the plain text of the opener if the message HTML starts with a
+ * <b> or <strong> block followed by a <br> or newline; otherwise null.
+ */
+function extractMessageTitle(innerHtml: string): string | null {
+  const m = innerHtml.match(/^\s*<(b|strong)\b[^>]*>([\s\S]*?)<\/\1\s*>/i);
+  if (!m) return null;
+  const rest = innerHtml.slice(m[0].length);
+  // Require a <br>, newline, or end of content immediately after the bold block
+  if (rest.trim() && !/^\s*(?:<br\s*\/?>|\n)/.test(rest)) return null;
+  return m[2].replace(/<[^>]+>/g, '').trim() || null;
+}
+
 function extractPublishedAt(html: string): string | null {
   const m = html.match(/<time\b[^>]*\bdatetime="([^"]+)"[^>]*>/i);
   return m?.[1] ?? null;
@@ -125,6 +139,11 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const msgHtml = extractMessageBlock(html, channelUsername, messageId);
 
   const text = extractMessageText(msgHtml);
+
+  // Extract the raw inner HTML of the text div to detect a bold opener (title)
+  const textDivMatch = msgHtml.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div\b|<\/div|<\/body|$)/);
+  const title = textDivMatch?.[1] ? extractMessageTitle(textDivMatch[1]) : null;
+
   // og:image is page-level and may reflect a different post — only use as a
   // last resort if the message block contains no photo_wrap elements
   const ogImage = extractMeta(html, 'og:image');
@@ -149,6 +168,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     channelAvatarUrl: null,
     messageId,
     publishedAt,
+    title,
     text,
     images: [],
     video: null,

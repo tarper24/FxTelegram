@@ -168,6 +168,27 @@ describe('scrapePost', () => {
     expect(data?.images[0]?.url).toBe('https://cdn.telegram.org/correct.jpg');
   });
 
+  it('extracts bold opener as title and keeps full text in text field', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Art Channel"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="art/9">
+        <div class="tgme_widget_message_text"><b>Big Sale Today!</b><br><br>Come check out our store for great deals.</div>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('art', 9);
+    expect(data?.title).toBe('Big Sale Today!');
+    expect(data?.text).toContain('Big Sale Today!');
+    expect(data?.text).toContain('Come check out our store');
+  });
+
+  it('returns null title when no bold opener', async () => {
+    mockFetch(SIMPLE_POST_HTML);
+    const data = await scrapePost('durov', 1);
+    expect(data?.title).toBeNull();
+  });
+
   it('extractMessageText handles nested divs in message text without truncating', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>

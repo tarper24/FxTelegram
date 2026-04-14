@@ -29,17 +29,35 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
   const oEmbedUrl = `${origin}/oembed?url=${encodeURIComponent(telegramUrl)}`;
 
-  // og:title uses post text so the channel name appears only once — via oEmbed
-  // author_name. Falls back to channel name for media-only posts (no text).
+  // og:title: use the scraped bold opener when available; otherwise full text
+  // (truncated). Channel name is the fallback for media-only posts.
   const TITLE_LIMIT = 256;
-  const title = msg.text
-    ? (msg.text.length > TITLE_LIMIT ? msg.text.slice(0, TITLE_LIMIT - 1) + '…' : msg.text)
-    : msg.channelName;
+  let title: string;
+  let bodyText = '';
 
-  // og:description: only populated when title was truncated (avoids showing the
-  // same text twice) or when file metadata needs surfacing.
+  if (msg.title) {
+    // Bold opener detected by scraper — use as title; body = remainder
+    title = msg.title.length <= TITLE_LIMIT ? msg.title : msg.title.slice(0, TITLE_LIMIT - 1) + '…';
+    bodyText = msg.text.replace(msg.title, '').trimStart();
+  } else if (msg.text) {
+    const nnIdx = msg.text.indexOf('\n\n');
+    if (nnIdx !== -1) {
+      // First paragraph → title, rest → description
+      const head = msg.text.slice(0, nnIdx).trim();
+      title = head.length <= TITLE_LIMIT ? head : head.slice(0, TITLE_LIMIT - 1) + '…';
+      bodyText = msg.text.slice(nnIdx).trim();
+    } else {
+      // No paragraph break — full text as title (original behaviour)
+      title = msg.text.length <= TITLE_LIMIT ? msg.text : msg.text.slice(0, TITLE_LIMIT - 1) + '…';
+      bodyText = msg.text.length > TITLE_LIMIT ? msg.text : '';
+    }
+  } else {
+    title = msg.channelName;
+  }
+
+  // og:description: body text (after title) + file metadata when present
   const bodyParts: string[] = [];
-  if (msg.text && msg.text.length > TITLE_LIMIT) bodyParts.push(msg.text);
+  if (bodyText) bodyParts.push(bodyText);
   if (msg.file && !opts.textOnly) bodyParts.push(`📎 ${msg.file.name} · ${msg.file.mimeType}`);
   const description = bodyParts.join('\n');
 

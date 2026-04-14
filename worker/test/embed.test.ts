@@ -31,18 +31,41 @@ describe('buildEmbed', () => {
     expect(html).toContain("Durov&#x27;s Channel");
   });
 
-  it('og:description is empty for short text (avoids duplication with title)', () => {
+  it('og:description is empty for short text without bold opener', () => {
     const html = buildEmbed(baseMessage, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
     expect(html).not.toContain('og:description');
   });
 
-  it('og:title truncated and og:description set for long text', () => {
+  it('og:title truncated and og:description set for long text without bold opener', () => {
     const longText = 'A'.repeat(300);
     const msg = { ...baseMessage, text: longText };
     const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
     expect(html).toContain('og:title');
     expect(html).toContain('og:description');
     expect(html).toContain('…');
+  });
+
+  it('bold opener: og:title = title, og:description = body text', () => {
+    const msg = { ...baseMessage, title: 'Big Announcement', text: 'Big Announcement\n\nThe full body text here.' };
+    const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
+    expect(html).toContain('content="Big Announcement"');
+    expect(html).toContain('og:description');
+    expect(html).toContain('The full body text here.');
+  });
+
+  it('paragraph split: first paragraph → og:title, rest → og:description', () => {
+    const msg = { ...baseMessage, text: 'First paragraph summary.\n\nThe rest of the post body here.' };
+    const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
+    expect(html).toContain('content="First paragraph summary."');
+    expect(html).toContain('og:description');
+    expect(html).toContain('The rest of the post body here.');
+  });
+
+  it('no paragraph break: full text as og:title, no og:description for short text', () => {
+    const msg = { ...baseMessage, text: 'Just a single line with no paragraph break.' };
+    const html = buildEmbed(msg, { origin: ORIGIN, forceMosaic: false, textOnly: false, isDiscord: false });
+    expect(html).toContain('content="Just a single line with no paragraph break."');
+    expect(html).not.toContain('og:description');
   });
 
   it('includes og:image for single image', () => {
