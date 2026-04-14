@@ -98,8 +98,17 @@ function extractAlbumImages(html: string): ImageData[] {
   let m: RegExpExecArray | null;
   while ((m = tagRe.exec(html)) !== null) {
     const styleMatch = m[0].match(/style="([^"]*)"/);
-    const url = extractBgUrl(styleMatch?.[1] ?? null);
-    if (url) images.push({ url, width: 0, height: 0 });
+    const style = styleMatch?.[1] ?? null;
+    const url = extractBgUrl(style);
+    if (url) {
+      const w = style?.match(/width:(\d+)px/)?.[1];
+      const h = style?.match(/height:(\d+)px/)?.[1];
+      images.push({
+        url,
+        width: w ? parseInt(w, 10) : 0,
+        height: h ? parseInt(h, 10) : 0,
+      });
+    }
   }
   return images;
 }
@@ -173,6 +182,8 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   // og:image is page-level and may reflect a different post — only use as a
   // last resort if the message block contains no photo_wrap elements
   const ogImage = extractMeta(html, 'og:image');
+  const ogImageWidth  = extractMeta(html, 'og:image:width');
+  const ogImageHeight = extractMeta(html, 'og:image:height');
 
   // Album images
   const albumImages = extractAlbumImages(msgHtml);
@@ -209,7 +220,11 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   } else if (albumImages.length === 1) {
     data.images = albumImages;
   } else if (ogImage) {
-    data.images = [{ url: ogImage, width: 0, height: 0 }];
+    data.images = [{
+      url: ogImage,
+      width:  ogImageWidth  ? parseInt(ogImageWidth,  10) : 0,
+      height: ogImageHeight ? parseInt(ogImageHeight, 10) : 0,
+    }];
   }
 
   // Resolve video (clears images)

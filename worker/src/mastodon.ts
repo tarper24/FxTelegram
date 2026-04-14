@@ -62,12 +62,14 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
       preview_remote_url: null,
       text_url: null,
       description: null,
+      blurhash: null,
       meta: {
         original: {
           ...(w ? { width: w } : {}),
           ...(h ? { height: h } : {}),
-          ...(w && h ? { aspect: w / h } : {}),
+          ...(w && h ? { size: `${w}x${h}`, aspect: w / h } : {}),
         },
+        focus: { x: 0.0, y: 0.0 },
       },
     });
   } else {
@@ -83,12 +85,14 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
         preview_remote_url: null,
         text_url: null,
         description: img.altText ?? null,
+        blurhash: null,
         meta: {
           original: {
             ...(w ? { width: w } : {}),
             ...(h ? { height: h } : {}),
-            ...(w && h ? { aspect: w / h } : {}),
+            ...(w && h ? { size: `${w}x${h}`, aspect: w / h } : {}),
           },
+          focus: { x: 0.0, y: 0.0 },
         },
       });
     });
@@ -108,21 +112,34 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
     spoiler_text: '',
     sensitive: false,
     visibility: 'public',
+    replies_count: 0,
+    reblogs_count: 0,
+    favourites_count: 0,
+    quotes_count: 0,
     account: {
       id: msg.channelUsername,
       display_name: msg.channelName,
       username: msg.channelUsername,
       acct: msg.channelUsername,
+      note: '',
       url: `https://t.me/${msg.channelUsername}`,
       uri: `https://t.me/${msg.channelUsername}`,
       created_at: null,
       locked: false,
       bot: false,
+      discoverable: true,
+      indexable: false,
+      group: false,
+      noindex: false,
+      hide_collections: false,
       avatar: msg.channelAvatarUrl,
       avatar_static: msg.channelAvatarUrl,
+      avatar_description: '',
       header: null,
       header_static: null,
+      header_description: '',
       emojis: [],
+      roles: [],
       fields: [],
     },
     media_attachments: mediaAttachments,
@@ -131,6 +148,6 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
     emojis: [],
     card: null,
     poll: null,
-    application: { name: null, website: null },
+    application: null,
   };
 }

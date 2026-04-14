@@ -11,15 +11,33 @@ import type { Env, MessageData } from './types';
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
     const parsed = parseRequest(request);
     const ua = request.headers.get('User-Agent') ?? '';
     const isBot = UA.BOT.test(ua);
     const isDiscord = UA.DISCORD.test(ua);
-    const origin = new URL(request.url).origin;
+    const origin = url.origin;
 
     // ── Root path: redirect to GitHub repo ───────────────────────────────
-    if (new URL(request.url).pathname === '/') {
+    if (url.pathname === '/') {
       return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
+    }
+
+    // ── Mastodon instance info ────────────────────────────────────────────
+    if (url.pathname === '/api/v1/instance') {
+      return new Response(JSON.stringify({
+        uri: url.hostname,
+        title: 'FxTelegram',
+        short_description: 'Telegram link previews for Discord',
+        description: 'Telegram link previews for Discord',
+        email: '',
+        version: '4.0.0',
+        urls: {},
+        stats: { user_count: 0, status_count: 0, domain_count: 0 },
+        languages: ['en'],
+        contact_account: null,
+        rules: [],
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // ── Internal proxy: video stream ──────────────────────────────────────
@@ -45,7 +63,6 @@ export default {
 
     // ── oEmbed endpoint ───────────────────────────────────────────────────
     if (parsed.contentType === 'oembed') {
-      const url = new URL(request.url);
       const targetUrl = url.searchParams.get('url') ?? '';
       const match = targetUrl.match(/t\.me\/([^/]+)\/(\d+)/);
       if (!match) return new Response('Bad Request', { status: 400 });
@@ -57,7 +74,7 @@ export default {
 
     // ── ActivityPub object URL (/users/): Discord reads snowflake from href only ─
     // It never GETs this URL for content — redirect to GitHub like FxEmbed does.
-    if (parsed.contentType === 'mastodon-status' && new URL(request.url).pathname.startsWith('/users/')) {
+    if (parsed.contentType === 'mastodon-status' && url.pathname.startsWith('/users/')) {
       return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
     }
 

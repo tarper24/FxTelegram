@@ -224,6 +224,40 @@ describe('scrapePost', () => {
     expect(data?.messageId).toBe(236);
   });
 
+  it('extracts image dimensions from photo_wrap style', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="FxTelegram"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="FxTelegram24/1">
+        <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.tg/a.jpg');width:800px;height:600px"></a>
+        <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.tg/b.jpg');width:640px;height:480px"></a>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('FxTelegram24', 1);
+    expect(data?.images[0]?.width).toBe(800);
+    expect(data?.images[0]?.height).toBe(600);
+    expect(data?.images[1]?.width).toBe(640);
+    expect(data?.images[1]?.height).toBe(480);
+  });
+
+  it('extracts og:image dimensions for single-image fallback', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="FxTelegram"/>
+      <meta property="og:image" content="https://cdn.tg/img.jpg"/>
+      <meta property="og:image:width" content="1280"/>
+      <meta property="og:image:height" content="720"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="FxTelegram24/1">
+        <div class="tgme_widget_message_text">Hello</div>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('FxTelegram24', 1);
+    expect(data?.images[0]?.width).toBe(1280);
+    expect(data?.images[0]?.height).toBe(720);
+  });
+
   it('extracts channel avatar URL from tgme_page_photo_image', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="FxTelegram"/>
