@@ -4,25 +4,24 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Replace `t.me` with `fxtelegram.me` in any Telegram link and get a rich embed instead of a bare URL preview.
+Replace `t.me` with `fxtelegram.org` in any Telegram link and get a rich embed instead of a bare URL preview.
 
 ```
 https://t.me/channelname/123
          ↓
-https://fxtelegram.me/channelname/123
+https://fxtelegram.org/channelname/123
 ```
 
 ---
 
 ## Domains
 
-All three domains are equivalent — use whichever you prefer:
-
 | Domain | Notes |
 |---|---|
-| [fxtelegram.me](https://fxtelegram.me) | Primary |
+| [fxtelegram.org](https://fxtelegram.org) | Primary |
+| [fxtelegram.me](https://fxtelegram.me) | Alternate |
 | [fx-t.me](https://fx-t.me) | Short form |
-| [fixupt.me](https://fixupt.me) | Alternative |
+| [fixupt.me](https://fixupt.me) | Alternate |
 
 ---
 
@@ -40,7 +39,7 @@ All three domains are equivalent — use whichever you prefer:
 
 FxTelegram acts as a lightweight proxy between the platform (Discord, Slack, etc.) and Telegram:
 
-1. Platform bot hits `fxtelegram.me/channelname/123`
+1. Platform bot hits `fxtelegram.org/channelname/123`
 2. Worker fetches content from Telegram, extracts media and metadata
 3. Returns enriched OpenGraph tags — image, video, title, description
 4. Platform renders a rich embed; regular users are sent straight to `t.me`
