@@ -23,23 +23,6 @@ export default {
       return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
     }
 
-    // ── Mastodon instance info ────────────────────────────────────────────
-    if (url.pathname === '/api/v1/instance') {
-      return new Response(JSON.stringify({
-        uri: url.hostname,
-        title: 'FxTelegram',
-        short_description: 'Telegram link previews for Discord',
-        description: 'Telegram link previews for Discord',
-        email: '',
-        version: '4.0.0',
-        urls: {},
-        stats: { user_count: 0, status_count: 0, domain_count: 0 },
-        languages: ['en'],
-        contact_account: null,
-        rules: [],
-      }), { headers: { 'Content-Type': 'application/json' } });
-    }
-
     // ── Internal proxy: video stream ──────────────────────────────────────
     if (parsed.contentType === 'video' && parsed.channelUsername && parsed.messageId) {
       return handleVideoProxy(parsed.channelUsername, parsed.messageId, request, env);
