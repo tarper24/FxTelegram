@@ -72,10 +72,16 @@ export default {
       return new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // ── ActivityPub object URL (/users/): Discord reads snowflake from href only ─
-    // It never GETs this URL for content — redirect to GitHub like FxEmbed does.
+    // ── ActivityPub object URL (/users/:channel/statuses/:snowflake) ────────
+    // Discord fetches this URL to confirm the Mastodon instance and status ID.
+    // Return a minimal ActivityPub Note so Discord derives our domain as the
+    // instance and then calls /api/v1/statuses/:snowflake on us.
     if (parsed.contentType === 'mastodon-status' && url.pathname.startsWith('/users/')) {
-      return Response.redirect('https://github.com/tarper24/FxTelegram', 302);
+      return new Response(JSON.stringify({
+        '@context': 'https://www.w3.org/ns/activitystreams',
+        id: `${origin}${url.pathname}`,
+        type: 'Note',
+      }), { headers: { 'Content-Type': 'application/activity+json' } });
     }
 
     // ── Mastodon/ActivityPub status endpoint ─────────────────────────────
@@ -180,7 +186,9 @@ export default {
       mediaCount: msg.images.length + (msg.video ? 1 : 0),
     };
     const mastodonId = computeMastodonId(mastodonCfg);
-    ctx.waitUntil(storeMastodonPost(env.FXTELEGRAM_KV, mastodonId, mastodonCfg));
+    // Await the KV write so the entry exists before Discord's follow-up
+    // /api/v1/statuses/:mastodonId request arrives (avoids a 404 race).
+    await storeMastodonPost(env.FXTELEGRAM_KV, mastodonId, mastodonCfg);
     const html = buildEmbed(msg, {
       origin,
       forceMosaic: parsed.flags.forceMosaic,

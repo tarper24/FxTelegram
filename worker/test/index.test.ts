@@ -371,13 +371,18 @@ describe('Mastodon instance info (/api/v1/instance)', () => {
 });
 
 describe('ActivityPub object URL (/users/)', () => {
-  it('redirects to GitHub regardless of UA', async () => {
+  it('returns ActivityPub JSON with id matching the requested URL', async () => {
     const env: Env = { FXTELEGRAM_KV: makeKv() };
+    const statusUrl = `${ORIGIN}/users/FxTelegram24/statuses/12345678901234567890`;
     const res = await worker.fetch(
-      new Request(`${ORIGIN}/users/FxTelegram24/statuses/12345678901234567890`, { headers: { 'User-Agent': BOT_UA } }),
+      new Request(statusUrl, { headers: { 'User-Agent': BOT_UA } }),
       env, makeCtx()
     );
-    expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('https://github.com/tarper24/FxTelegram');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('application/activity+json');
+    const body = await res.json() as Record<string, unknown>;
+    expect(body['@context']).toBe('https://www.w3.org/ns/activitystreams');
+    expect(body['id']).toBe(statusUrl);
+    expect(body['type']).toBe('Note');
   });
 });
