@@ -3,6 +3,7 @@ import {
   PhotonImage,
   SamplingFilter,
   resize,
+  crop,
   watermark,
 } from '@cf-wasm/photon';
 import { LIMITS } from './constants';
@@ -49,6 +50,28 @@ function decodeOrPlaceholder(bytes: Uint8Array | null): PhotonImage {
 }
 
 /**
+ * Resize an image to cover a target cell using center-crop (no squishing).
+ * Scale is chosen so the image fills the cell in both dimensions, then
+ * the excess is cropped from the center.
+ */
+function coverCrop(img: PhotonImage, targetW: number, targetH: number): PhotonImage {
+  const srcW = img.get_width();
+  const srcH = img.get_height();
+  if (srcW === 0 || srcH === 0) return createWhiteCanvas(targetW, targetH);
+  const scale = Math.max(targetW / srcW, targetH / srcH);
+  const scaledW = Math.ceil(srcW * scale);
+  const scaledH = Math.ceil(srcH * scale);
+  const scaled = resize(img, scaledW, scaledH, SamplingFilter.Lanczos3);
+  try {
+    const x1 = Math.floor((scaledW - targetW) / 2);
+    const y1 = Math.floor((scaledH - targetH) / 2);
+    return crop(scaled, x1, y1, x1 + targetW, y1 + targetH);
+  } finally {
+    scaled.free();
+  }
+}
+
+/**
  * Composite up to MAX_MOSAIC_IMAGES image URLs into a grid and return JPEG bytes.
  *
  * Layout:
@@ -77,7 +100,7 @@ export async function buildMosaic(urls: string[]): Promise<Uint8Array> {
     canvas = createWhiteCanvas(canvasW, canvasH);
 
     for (let i = 0; i < images.length; i++) {
-      const cell = resize(images[i]!, CELL_W, CELL_H, SamplingFilter.Lanczos3);
+      const cell = coverCrop(images[i]!, CELL_W, CELL_H);
       pendingFree.push(cell); // track for cleanup if watermark throws
       const col = i % 2;
       const row = Math.floor(i / 2);

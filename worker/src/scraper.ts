@@ -7,6 +7,67 @@ function extractBgUrl(style: string | null): string | null {
   return m?.[1] ?? null;
 }
 
+/** Decode common HTML entities to plain-text characters */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
+/** Escape HTML special characters for safe insertion into element content */
+function escCh(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Build sanitized HTML for the Mastodon content field from the raw inner HTML
+ * of a tgme_widget_message_text div.
+ * Keeps <a> links and <b>/<strong> bold; decodes entities; wraps in <p> tags.
+ */
+function extractContentHtml(innerHtml: string): string {
+  if (!innerHtml.trim()) return '';
+
+  // Normalize <br> to newlines
+  let html = innerHtml.replace(/<br\s*\/?>/gi, '\n');
+
+  // Stash <a> links (SOH = \x01 as placeholder delimiter, safe in HTML)
+  const links: string[] = [];
+  html = html.replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
+    const text = escCh(decodeEntities(inner.replace(/<[^>]+>/g, '').trim()));
+    const idx = links.length;
+    links.push(`<a href="${href}">${text}</a>`);
+    return `\x01L${idx}\x01`;
+  });
+
+  // Stash <b>/<strong> bold spans
+  const bolds: string[] = [];
+  html = html.replace(/<(b|strong)\b[^>]*>([\s\S]*?)<\/(b|strong)>/gi, (_, _t, inner) => {
+    const text = escCh(decodeEntities(inner.replace(/<[^>]+>/g, '').trim()));
+    const idx = bolds.length;
+    bolds.push(`<strong>${text}</strong>`);
+    return `\x01B${idx}\x01`;
+  });
+
+  // Strip remaining tags, decode entities in text nodes, re-escape
+  html = escCh(decodeEntities(html.replace(/<[^>]+>/g, '')));
+
+  // Restore stashed elements
+  html = html.replace(/\x01L(\d+)\x01/g, (_, i) => links[Number(i)]!);
+  html = html.replace(/\x01B(\d+)\x01/g, (_, i) => bolds[Number(i)]!);
+
+  // Wrap in <p> paragraphs (double newline = paragraph break)
+  return html
+    .split('\n\n')
+    .filter(p => p.trim())
+    .map(p => `<p>${p.trim().replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
 function extractMeta(html: string, property: string): string | null {
   // Match property before content
   let m = html.match(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content="([^"]+)"`, 'i'));
@@ -47,7 +108,7 @@ function extractMessageText(html: string): string {
   // backtracking to the last </div> that precedes a block-level boundary is safe.
   const divMatch = html.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div\b|<\/div|<\/body|$)/);
   if (divMatch?.[1]) {
-    return divMatch[1]
+    const text = divMatch[1]
       .replace(/<br\s*\/?>/gi, '\n')
       // For external links with display text: show "text (url)" so the URL is
       // visible and auto-linkable by Discord. Internal t.me links keep display text only.
@@ -61,8 +122,9 @@ function extractMessageText(html: string): string {
       })
       .replace(/<[^>]+>/g, '')
       .trim();
+    return decodeEntities(text);
   }
-  return extractMeta(html, 'og:description') ?? '';
+  return decodeEntities(extractMeta(html, 'og:description') ?? '');
 }
 
 /**
@@ -176,8 +238,10 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const text = extractMessageText(msgHtml);
 
   // Extract the raw inner HTML of the text div to detect a bold opener (title)
+  // and to build sanitized HTML for the Mastodon content field
   const textDivMatch = msgHtml.match(/<div[^>]*class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div\b|<\/div|<\/body|$)/);
   const title = textDivMatch?.[1] ? extractMessageTitle(textDivMatch[1]) : null;
+  const contentHtml = textDivMatch?.[1] ? extractContentHtml(textDivMatch[1]) : '';
 
   // og:image is page-level and may reflect a different post — only use as a
   // last resort if the message block contains no photo_wrap elements
@@ -207,6 +271,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     publishedAt,
     title,
     text,
+    contentHtml,
     images: [],
     video: null,
     file: null,

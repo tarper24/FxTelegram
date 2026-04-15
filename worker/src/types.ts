@@ -55,7 +55,8 @@ export interface MessageData {
   messageId: number;
   publishedAt: string | null; // ISO 8601 from <time datetime="...">
   title?: string | null;      // bold opener line, if detected
-  text: string;
+  text: string;              // plain text for OG meta tags (entities decoded, links as "text (url)")
+  contentHtml: string;       // sanitized HTML with <a> links for Mastodon content field
   images: ImageData[];
   video: VideoData | null;
   file: FileData | null;

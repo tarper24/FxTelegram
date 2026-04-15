@@ -92,6 +92,11 @@ export default {
       if (cfg.textOnly) {
         msg = { ...msg, images: [], video: null };
       }
+      if (cfg.forceMosaic && msg.images.length > 1) {
+        const mosaicUrl = `${origin}/mosaic/${cfg.channelUsername}/${cfg.messageId}`;
+        const rows = msg.images.length <= 2 ? 1 : 2;
+        msg = { ...msg, images: [{ url: mosaicUrl, width: 1200, height: rows * 400 }], hasAlbum: false };
+      }
       const status = buildMastodonStatus(msg, origin);
       return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
     }

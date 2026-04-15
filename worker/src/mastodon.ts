@@ -37,15 +37,9 @@ function textToHtml(text: string): string {
 export function buildMastodonStatus(msg: MessageData, origin: string): Record<string, unknown> {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
 
-  // Build content HTML — bold title (if scraped) + body paragraphs
-  let contentHtml = '';
-  if (msg.title) {
-    contentHtml += `<p><strong>${escHtml(msg.title)}</strong></p>`;
-    const body = msg.text.replace(msg.title, '').trimStart();
-    if (body) contentHtml += textToHtml(body);
-  } else if (msg.text) {
-    contentHtml = textToHtml(msg.text);
-  }
+  // Use pre-sanitized HTML from scraper; fall back to plain-text conversion
+  // for data cached before contentHtml was added
+  const contentHtml = msg.contentHtml || (msg.text ? textToHtml(msg.text) : '');
 
   // Media attachments
   const mediaAttachments: Record<string, unknown>[] = [];
@@ -122,8 +116,8 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
       username: msg.channelUsername,
       acct: msg.channelUsername,
       note: '',
-      url: `https://t.me/${msg.channelUsername}`,
-      uri: `https://t.me/${msg.channelUsername}`,
+      url: `${origin}/@${msg.channelUsername}`,
+      uri: `${origin}/users/${msg.channelUsername}`,
       created_at: null,
       locked: false,
       bot: false,

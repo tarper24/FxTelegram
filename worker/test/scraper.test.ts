@@ -272,6 +272,28 @@ describe('scrapePost', () => {
     expect(data?.channelAvatarUrl).toBe('https://cdn4.telesco.pe/avatar.jpg');
   });
 
+  it('decodes HTML entities in plain text (e.g. &#39; → apostrophe)', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">It&#39;s a test &amp; it works</div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 11);
+    expect(data?.text).toBe("It's a test & it works");
+  });
+
+  it('contentHtml preserves <a> links and wraps in <p> tags', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">Hello <a href="https://example.com">world</a></div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 12);
+    expect(data?.contentHtml).toBe('<p>Hello <a href="https://example.com">world</a></p>');
+  });
+
   it('extractMessageText handles nested divs in message text without truncating', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>
