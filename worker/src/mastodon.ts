@@ -1,5 +1,15 @@
 import type { MessageData } from './types';
 
+/** FNV-1a 32-bit hash → stable numeric string for account.id */
+function hashUsername(username: string): string {
+  let hash = 2166136261; // FNV offset basis
+  for (let i = 0; i < username.length; i++) {
+    hash ^= username.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0; // FNV prime, 32-bit unsigned
+  }
+  return String(hash);
+}
+
 function formatCount(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -90,7 +100,7 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
     favourites_count: msg.reactionsTotal,
     quotes_count: 0,
     account: {
-      id: msg.channelUsername,
+      id: hashUsername(msg.channelUsername),
       display_name: msg.channelName,
       username: msg.channelUsername,
       acct: msg.channelUsername,
