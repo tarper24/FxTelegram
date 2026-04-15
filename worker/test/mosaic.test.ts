@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { buildMosaic } from '../src/mosaic';
+import { buildMosaic, getMosaicDimensions } from '../src/mosaic';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -36,53 +36,50 @@ function mockImageFetch() {
   );
 }
 
+/** Build a minimal ImageInput array for testing — dimensions default to 1280×720 (landscape). */
+function imgs(
+  count: number,
+  w = 1280,
+  h = 720,
+): { url: string; width: number; height: number }[] {
+  return Array.from({ length: count }, (_, i) => ({
+    url: `https://cdn.tg/${String.fromCharCode(97 + i)}.jpg`,
+    width: w,
+    height: h,
+  }));
+}
+
 describe('buildMosaic', () => {
   it('returns a non-empty Uint8Array for 2 images', async () => {
     mockImageFetch();
-    const result = await buildMosaic([
-      'https://cdn.tg/a.jpg',
-      'https://cdn.tg/b.jpg',
-    ]);
+    const result = await buildMosaic(imgs(2));
     expect(result).toBeInstanceOf(Uint8Array);
     expect(result.length).toBeGreaterThan(0);
   });
 
-  it('handles 3 images without throwing', async () => {
+  it.each([3, 4, 5, 6, 7])('handles %i images without throwing', async (n) => {
     mockImageFetch();
-    const result = await buildMosaic(['a','b','c'].map(x => `https://cdn.tg/${x}.jpg`));
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('handles 4 images without throwing', async () => {
-    mockImageFetch();
-    const result = await buildMosaic(['a','b','c','d'].map(x => `https://cdn.tg/${x}.jpg`));
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('handles 5 images without throwing', async () => {
-    mockImageFetch();
-    const result = await buildMosaic(['a','b','c','d','e'].map(x => `https://cdn.tg/${x}.jpg`));
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('handles 6 images without throwing', async () => {
-    mockImageFetch();
-    const result = await buildMosaic(['a','b','c','d','e','f'].map(x => `https://cdn.tg/${x}.jpg`));
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('handles 7 images without throwing', async () => {
-    mockImageFetch();
-    const result = await buildMosaic(['a','b','c','d','e','f','g'].map(x => `https://cdn.tg/${x}.jpg`));
+    const result = await buildMosaic(imgs(n));
     expect(result.length).toBeGreaterThan(0);
   });
 
   it('caps at 7 images even if more are passed', async () => {
-    const fetchSpy = vi.fn().mockImplementation(() =>
-      Promise.resolve(new Response(TINY_JPEG.slice(), { headers: { 'Content-Type': 'image/jpeg' } }))
+    const fetchSpy = vi.fn().mockResolvedValue(
+      new Response(TINY_JPEG.slice(), { headers: { 'Content-Type': 'image/jpeg' } })
     );
     vi.stubGlobal('fetch', fetchSpy);
-    await buildMosaic(['a','b','c','d','e','f','g','h'].map(x => `https://cdn.tg/${x}.jpg`));
+    await buildMosaic(imgs(9));
     expect(fetchSpy).toHaveBeenCalledTimes(7);
+  });
+
+  it('portrait images produce a taller canvas than landscape', () => {
+    const landscape = getMosaicDimensions(imgs(2, 1920, 1080).map(({ width, height }) => ({ width, height })));
+    const portrait  = getMosaicDimensions(imgs(2, 1080, 1920).map(({ width, height }) => ({ width, height })));
+    expect(portrait.height).toBeGreaterThan(landscape.height);
+  });
+
+  it('unknown dimensions (0×0) fall back to default cell height', () => {
+    const dims = getMosaicDimensions([{ width: 0, height: 0 }, { width: 0, height: 0 }]);
+    expect(dims.height).toBe(400); // MOSAIC_CELL_H default
   });
 });

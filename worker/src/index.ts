@@ -53,7 +53,7 @@ export default {
       }
       const msgData = await fetchOrScrape(parsed.channelUsername, parsed.messageId, env, ctx);
       if (!msgData || msgData.images.length < 2) return new Response('Not found', { status: 404 });
-      const mosaicBytes = await buildMosaic(msgData.images.map(i => i.url));
+      const mosaicBytes = await buildMosaic(msgData.images);
       // KV values max out at 25 MiB — guard before writing
       if (mosaicBytes.byteLength <= 25 * 1024 * 1024) {
         ctx.waitUntil(setCacheBinary(env.FXTELEGRAM_KV, mosaicKey(parsed.channelUsername, parsed.messageId), mosaicBytes, TTL.MOSAIC));
@@ -100,7 +100,7 @@ export default {
       }
       if (cfg.forceMosaic && msg.images.length > 1) {
         const mosaicUrl = `${origin}/mosaic/${cfg.channelUsername}/${cfg.messageId}`;
-        const { width, height } = getMosaicDimensions(msg.images.length);
+        const { width, height } = getMosaicDimensions(msg.images);
         msg = { ...msg, images: [{ url: mosaicUrl, width, height }], hasAlbum: false };
       }
       const status = buildMastodonStatus(msg, origin);
