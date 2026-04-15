@@ -9,6 +9,7 @@ jobs:
   deploy-prod:
     name: Test, Type-check & Deploy to Production
     runs-on: ubuntu-latest
+    environment: prod
 
     steps:
       - uses: actions/checkout@v6
