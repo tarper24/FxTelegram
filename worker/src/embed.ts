@@ -36,7 +36,7 @@ function formatStats(reactions: ReactionData[], commentsCount: number | null, vi
   const top = (reactions ?? []).slice(0, 3);
   if (top.length > 0) parts.push(top.map(r => `${r.emoji} ${formatCount(r.count)}`).join(' '));
   if (commentsCount !== null) parts.push(`💬 ${formatCount(commentsCount)}`);
-  if (views !== null) parts.push(`👁 ${formatCount(views)}`);
+  if (views !== null) parts.push(`👁️ ${formatCount(views)}`);
   return parts.join('  ');
 }
 

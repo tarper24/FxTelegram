@@ -172,7 +172,9 @@ function extractReactions(html: string): ReactionData[] {
     // Count is the text node immediately after </i>
     const countText = inner.match(/<\/i>\s*([^<\s][^<]*)/)?.[1]?.trim();
     if (!emojiMatch?.[1] || !countText) continue;
-    const emoji = emojiMatch[1].trim();
+    // Add VS-16 (U+FE0F) after chars in the Miscellaneous Symbols range (U+2600–27FF)
+    // that default to text presentation — turns ❤ → ❤️, ❤‍🔥 → ❤️‍🔥, etc.
+    const emoji = emojiMatch[1].trim().replace(/([\u2600-\u27FF])(?!\uFE0F)/g, '$1\uFE0F');
     const count = parseViewCount(countText);
     if (count > 0 && emoji) reactions.push({ emoji, count });
   }
