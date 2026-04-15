@@ -6,55 +6,38 @@
 
 Replace `t.me` with `fx-t.me` in any Telegram link and get a rich embed instead of a bare URL preview.
 
+```mermaid
+graph LR
+    A("https:\/\/t.me/channelname/123") -->|Replace t.me with fx-t.me| B("https:\/\/fx-t.me/channelname/123")
 ```
-https://t.me/channelname/123
-        ↓
-https://fx-t.me/channelname/123
+
+## Discord tips
+
+**Advanced — Discord's find-and-replace shorthand:**
+
+If you post a `telegram.me`/`telegram.org` link, send `s/e/x` as your next message and Discord will replace the first match inline:
+```mermaid
+graph LR
+    A("https:\/\/telegram.me/channelname/123") -->|Send `s/e/x` as the next message| B("https:\/\/txlegram.me/channelname/123")
 ```
 
----
-
-## Domains
-
-| Domain | Notes |
-|---|---|
-| [fxtelegram.org](https://fxtelegram.org) | Primary |
-| [fx-t.me](https://fx-t.me) | Short form — swap `t.me` for `fx-t.me` |
-| [fxtelegram.me](https://fxtelegram.me) | Alternate |
-| [fixupt.me](https://fixupt.me) | Alternate |
-| [txlegram.me](https://txlegram.me) | Discord `s/telegram/txlegram` |
-| [txlegram.org](https://txlegram.org) | Discord `s/telegram/txlegram` |
+```mermaid
+graph LR
+    A("https:\/\/telegram.org/channelname/123") -->|Send `s/e/x` as the next message| B("https:\/\/txlegram.org/channelname/123")
+```
 
 ---
 
 ## What you get
 
 - **Images** — full-resolution preview with correct dimensions
+- **Multi-image albums** — composited into a smart mosaic layout (2–7 images) that adapts to portrait and landscape aspect ratios; Discord shows a native gallery with all images individually
 - **Videos** — inline playback directly in Discord (no clicking through)
 - **Text posts** — full post text with channel name and author
 - **Files** — filename, size, and type for public posts
-- **Private channels** — opt-in support: add `@FxTelegramBot` to your channel to enable embeds for your members' shared links
-
----
-
-## Discord tips
-
-**Quick swap — `fx-t.me`:**  
-Change `t.me` to `fx-t.me`. Same length, one letter different, works inline.
-
-```
-https://t.me/channelname/123  →  https://fx-t.me/channelname/123
-```
-
-**Fix someone else's link — `s/telegram/txlegram`:**  
-If a link uses `telegram.me` or `telegram.org`, reply with the Discord edit shorthand and it rewrites the link automatically.
-
-```
-s/telegram/txlegram
-```
-
-`telegram.me/channelname/123` → `txlegram.me/channelname/123`  
-`telegram.org/channelname/123` → `txlegram.org/channelname/123`
+- **Reactions and views** — displayed inline with the embed (e.g. ❤️ 1.2K  💬 34  👁️ 8.5K)
+- **Channel avatars** — channel profile picture shown alongside the embed
+- **ActivityPub / Mastodon compatibility** — Discord uses the Mastodon oEmbed protocol to detect rich link previews; FxTelegram implements this protocol so Discord renders the full embed
 
 ---
 
@@ -64,79 +47,56 @@ FxTelegram acts as a lightweight proxy between the platform (Discord, Slack, etc
 
 1. Platform bot hits `fx-t.me/channelname/123`
 2. Worker fetches content from Telegram, extracts media and metadata
-3. Returns enriched OpenGraph tags — image, video, title, description
+3. Returns enriched OpenGraph/ActivityPub tags — image(s), video, title, description, stats
 4. Platform renders a rich embed; regular users are sent straight to `t.me`
 
-Built on Cloudflare Workers for fast, globally distributed responses.
+Discord's Mastodon oEmbed detection is fully supported — FxTelegram implements the ActivityPub instance endpoints so Discord uses its richer Mastodon embed path instead of the basic OG fallback.
+
+Built on Cloudflare Workers for fast, globally distributed responses with KV-backed caching.
 
 ---
 
-## Supported link types
+### Domains
 
-| Link | Support |
-|---|---|
-| `t.me/channelname/123` | Public channel post |
+| Domain                                   | Notes                                  |
+| ---------------------------------------- | -------------------------------------- |
+| [fxtelegram.org](https://fxtelegram.org) | Primary                                |
+| [fx-t.me](https://fx-t.me)               | Short form — swap `t.me` for `fx-t.me` |
+| [fxtelegram.me](https://fxtelegram.me)   | Alternate                              |
+| [fixupt.me](https://fixupt.me)           | Alternate                              |
+| [txlegram.me](https://txlegram.me)       | Discord `s/telegram/txlegram`          |
+| [txlegram.org](https://txlegram.org)     | Discord `s/telegram/txlegram`          |
 
----
+### URL modifiers
 
-## Setup Prerequisites
+Append modifiers to the path to change embed behavior:
 
-Before the GitHub Actions workflow can deploy the worker, complete the following one-time steps.
+| Modifier              | Example             | Effect                                              |
+| --------------------- | ------------------- | --------------------------------------------------- |
+| `/p2` — photo index   | `fx-t.me/ch/123/p2` | Show only photo 2 from an album                     |
+| `/m` — mosaic         | `fx-t.me/ch/123/m`  | Force mosaic even when Discord would show a gallery |
+| `/t` — text only      | `fx-t.me/ch/123/t`  | Strip all media, show text only                     |
+| `/[lang]` — translate | `fx-t.me/ch/123/es` | Translate post text (ISO 639-1 code)                |
 
-### 1. Create KV namespaces
 
-You need two namespaces: one for production and one for the dev environment.
+### Special subdomains
 
-```bash
-# Production namespace
-npx wrangler kv namespace create KV
-
-# Dev namespace (must include --env dev so wrangler scopes it correctly)
-npx wrangler kv namespace create KV --env dev
-
-# Preview bindings (used by `wrangler dev` — run once for each environment)
-npx wrangler kv namespace create KV --preview
-npx wrangler kv namespace create KV --env dev --preview
-```
-
-Each command prints a block like:
-
-```
-{ binding = "KV", id = "abc123..." }
-```
-
-### 2. Update `wrangler.toml`
-
-Copy the IDs into `worker/wrangler.toml`, replacing the placeholders:
-
-| Placeholder | Replace with |
-|---|---|
-| `REPLACE_WITH_KV_ID` | prod `id` from `wrangler kv namespace create KV` |
-| `REPLACE_WITH_KV_PREVIEW_ID` | prod `id` from `wrangler kv namespace create KV --preview` |
-| `REPLACE_WITH_DEV_KV_ID` | dev `id` from `wrangler kv namespace create KV --env dev` |
-| `REPLACE_WITH_DEV_KV_PREVIEW_ID` | dev `id` from `wrangler kv namespace create KV --env dev --preview` |
-
-`wrangler deploy` will fail until real IDs are in place — the placeholders are intentional guards.
-
-### 3. Add GitHub Actions secrets
-
-In your repository go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-
-| Secret name | Value |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | An API token with the *Edit Cloudflare Workers* permission template |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID (found in the Workers dashboard URL) |
+| Subdomain     | Example                     | Effect                             |
+| ------------- | --------------------------- | ---------------------------------- |
+| `m.` — mosaic | `m.fxtelegram.org/ch/123`   | Force mosaic layout                |
+| `d.` — direct | `d.fxtelegram.org/ch/123`   | Redirect directly to the media URL |
+| `t.` — text   | `t.fxtelegram.org/ch/123`   | Text-only embed                    |
+| `api.` — JSON | `api.fxtelegram.org/ch/123` | Return raw JSON post data          |
 
 ---
 
-## Branch Protection (recommended)
+### Supported link types
 
-To ensure the CI pipeline is a hard gate before anything lands on `main`:
-
-1. Go to **Settings → Branches → Add rule** for `main`.
-2. Enable **Require status checks to pass before merging** and add the `Test & Type-check` check.
-3. Enable **Require at least 1 approving review** before merging.
-4. Enable **Restrict who can push directly to this branch** (no direct pushes to `main` — everything goes through a PR).
+| Link                   | Support                                 |
+| ---------------------- | --------------------------------------- |
+| `t.me/channelname/123` | Public channel post                     |
+| `t.me/channelname`     | Channel profile (redirects to Telegram) |
+| `t.me/+inviteHash`     | Invite links (redirects to Telegram)    |
 
 ---
 
