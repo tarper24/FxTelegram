@@ -159,14 +159,6 @@ function extractViews(html: string): number | null {
   return n > 0 ? n : null;
 }
 
-function extractComments(html: string): number | null {
-  // Telegram shows comment count in the footer for channels with linked discussion groups
-  const m = html.match(/class="[^"]*tgme_widget_message_(?:replies|comments)_count[^"]*"[^>]*>([^<]+)</)
-    ?? html.match(/class="[^"]*tgme_widget_message_comment_count[^"]*"[^>]*>([^<]+)</);
-  if (!m?.[1]) return null;
-  const n = parseViewCount(m[1].trim());
-  return n > 0 ? n : null;
-}
 
 function extractReactions(html: string): ReactionData[] {
   // Actual structure: <span class="tgme_reaction"><i class="emoji" ...><b>❤</b></i>53</span>
@@ -309,8 +301,8 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
 
   const publishedAt = extractPublishedAt(msgHtml);
   const views = extractViews(msgHtml);
-  const commentsCount = extractComments(msgHtml);
   const reactions = extractReactions(msgHtml);
+  // commentsCount requires MTProto — not available in the web preview
 
   const data: MessageData = {
     channelUsername,
@@ -326,7 +318,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     file: null,
     hasAlbum: false,
     views,
-    commentsCount,
+    commentsCount: null,
     reactions,
   };
 
