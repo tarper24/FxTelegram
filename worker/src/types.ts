@@ -68,7 +68,8 @@ export interface MessageData {
   hasAlbum: boolean;
   views: number | null;
   commentsCount: number | null;
-  reactions: ReactionData[];
+  reactions: ReactionData[];   // standard Unicode emoji only (for display)
+  reactionsTotal: number;      // sum of ALL reaction counts including custom Telegram emoji
 }
 
 export interface Env {

@@ -326,6 +326,7 @@ describe('scrapePost', () => {
     expect(data?.reactions).toHaveLength(2);
     expect(data?.reactions[0]).toEqual({ emoji: '❤️', count: 53 });
     expect(data?.reactions[1]).toEqual({ emoji: '🥰', count: 6 });
+    expect(data?.reactionsTotal).toBe(59);
     expect(data?.views).toBe(930);
   });
 

@@ -160,9 +160,10 @@ function extractViews(html: string): number | null {
 }
 
 
-function extractReactions(html: string): ReactionData[] {
+function extractReactions(html: string): { reactions: ReactionData[]; total: number } {
   // Actual structure: <span class="tgme_reaction"><i class="emoji" ...><b>❤</b></i>53</span>
   const reactions: ReactionData[] = [];
+  let total = 0;
   const reactionRe = /<span\b[^>]*class="[^"]*tgme_reaction[^"]*"[^>]*>([\s\S]*?)<\/span>/g;
   let m: RegExpExecArray | null;
   while ((m = reactionRe.exec(html)) !== null) {
@@ -176,10 +177,11 @@ function extractReactions(html: string): ReactionData[] {
     // that default to text presentation — turns ❤ → ❤️, ❤‍🔥 → ❤️‍🔥, etc.
     const emoji = emojiMatch[1].trim().replace(/([\u2600-\u27FF])(?!\uFE0F)/g, '$1\uFE0F');
     const count = parseViewCount(countText);
-    // Skip custom Telegram emoji — their <b> fallback contains no standard Unicode emoji
+    total += count;
+    // Custom Telegram emoji have no standard Unicode in <b> — count them in total but skip display
     if (count > 0 && /\p{Emoji}/u.test(emoji)) reactions.push({ emoji, count });
   }
-  return reactions;
+  return { reactions, total };
 }
 
 function extractChannelAvatar(html: string): string | null {
@@ -304,7 +306,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
 
   const publishedAt = extractPublishedAt(msgHtml);
   const views = extractViews(msgHtml);
-  const reactions = extractReactions(msgHtml);
+  const { reactions, total: reactionsTotal } = extractReactions(msgHtml);
   // commentsCount requires MTProto — not available in the web preview
 
   const data: MessageData = {
@@ -323,6 +325,7 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     views,
     commentsCount: null,
     reactions,
+    reactionsTotal,
   };
 
   // Resolve images

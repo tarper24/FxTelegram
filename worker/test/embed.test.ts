@@ -17,6 +17,7 @@ const baseMessage: MessageData = {
   views: null,
   commentsCount: null,
   reactions: [],
+  reactionsTotal: 0,
 };
 
 const ORIGIN = 'https://fxtelegram.org';

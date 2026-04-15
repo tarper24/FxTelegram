@@ -71,7 +71,7 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
     visibility: 'public',
     replies_count: msg.commentsCount ?? 0,
     reblogs_count: 0,
-    favourites_count: (msg.reactions ?? []).reduce((s, r) => s + r.count, 0),
+    favourites_count: msg.reactionsTotal,
     quotes_count: 0,
     account: {
       id: msg.channelUsername,

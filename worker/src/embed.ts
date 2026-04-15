@@ -31,13 +31,13 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-function formatStats(reactions: ReactionData[], commentsCount: number | null, views: number | null): string {
+function formatStats(reactions: ReactionData[], reactionsTotal: number, commentsCount: number | null, views: number | null): string {
   const parts: string[] = [];
-  const all = reactions ?? [];
-  if (all.length > 0) {
-    const topEmoji = all.slice(0, 3).map(r => r.emoji).join(' ');
-    const total = all.reduce((s, r) => s + r.count, 0);
-    parts.push(`${topEmoji} ${formatCount(total)}`);
+  if (reactionsTotal > 0) {
+    const topEmoji = reactions.length > 0
+      ? reactions.slice(0, 3).map(r => r.emoji).join(' ')
+      : '❤️'; // fallback when all reactions are custom Telegram emoji
+    parts.push(`${topEmoji} ${formatCount(reactionsTotal)}`);
   }
   if (commentsCount !== null) parts.push(`💬 ${formatCount(commentsCount)}`);
   if (views !== null) parts.push(`👁️ ${formatCount(views)}`);
@@ -79,7 +79,7 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
   const bodyParts: string[] = [];
   if (bodyText) bodyParts.push(bodyText);
   if (msg.file && !opts.textOnly) bodyParts.push(`📎 ${msg.file.name} · ${msg.file.mimeType}`);
-  const stats = formatStats(msg.reactions, msg.commentsCount, msg.views);
+  const stats = formatStats(msg.reactions, msg.reactionsTotal, msg.commentsCount, msg.views);
   if (stats) bodyParts.push(stats);
   const description = bodyParts.join('\n');
 
