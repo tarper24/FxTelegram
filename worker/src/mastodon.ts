@@ -1,8 +1,24 @@
 import type { MessageData } from './types';
 
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
 export function buildMastodonStatus(msg: MessageData, origin: string): Record<string, unknown> {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
-  const contentHtml = msg.contentHtml;
+
+  const statsParts: string[] = [];
+  if (msg.reactionsTotal > 0) {
+    const emoji = msg.reactions.length > 0
+      ? msg.reactions.slice(0, 3).map(r => r.emoji).join(' ')
+      : '❤️';
+    statsParts.push(`${emoji} ${formatCount(msg.reactionsTotal)}`);
+  }
+  if (msg.views !== null) statsParts.push(`👁️ ${formatCount(msg.views)}`);
+  const statsHtml = statsParts.length > 0 ? `<p>${statsParts.join('&ensp;')}</p>` : '';
+  const contentHtml = msg.contentHtml + statsHtml;
 
   // Media attachments
   const mediaAttachments: Record<string, unknown>[] = [];
