@@ -1,55 +1,8 @@
 import type { MessageData } from './types';
 
-/** Escape HTML special characters for use inside element content */
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-/**
- * Convert plain-text post body to a minimal HTML string suitable for the
- * Mastodon `content` field. Paragraph breaks (double newline) become <p>
- * tags; single newlines become <br>. Bare https:// URLs are linked.
- */
-function textToHtml(text: string): string {
-  return text
-    .split('\n\n')
-    .filter(p => p.trim())
-    .map(p => {
-      const inner = p
-        .split('\n')
-        .map(line => {
-          const escaped = escHtml(line);
-          // Auto-link bare https:// URLs
-          return escaped.replace(
-            /(https?:\/\/[^\s<>"()]+)/g,
-            '<a href="$1">$1</a>',
-          );
-        })
-        .join('<br>');
-      return `<p>${inner}</p>`;
-    })
-    .join('');
-}
-
 export function buildMastodonStatus(msg: MessageData, origin: string): Record<string, unknown> {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
-
-  // Use pre-sanitized HTML from scraper (preserves <strong> title + <a> links).
-  // For data cached before contentHtml was added, fall back to explicit title
-  // handling so the bold opener is not lost.
-  let contentHtml = msg.contentHtml;
-  if (!contentHtml && msg.text) {
-    if (msg.title) {
-      contentHtml = `<p><strong>${escHtml(msg.title)}</strong></p>`;
-      const body = msg.text.replace(msg.title, '').trimStart();
-      if (body) contentHtml += textToHtml(body);
-    } else {
-      contentHtml = textToHtml(msg.text);
-    }
-  }
+  const contentHtml = msg.contentHtml;
 
   // Media attachments
   const mediaAttachments: Record<string, unknown>[] = [];
