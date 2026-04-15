@@ -1,4 +1,4 @@
-import type { MessageData, ImageData, VideoData } from './types';
+import type { MessageData, ImageData, VideoData, ReactionData } from './types';
 
 /** Extract URL from CSS background-image style attribute */
 function extractBgUrl(style: string | null): string | null {
@@ -141,6 +141,53 @@ function extractMessageTitle(innerHtml: string): string | null {
   return m[2]!.replace(/<[^>]+>/g, '').trim() || null;
 }
 
+/** Parse Telegram count strings like "1.4K", "2.0M", "2,043" to an integer */
+function parseViewCount(s: string): number {
+  const clean = s.replace(/,/g, '').trim();
+  const n = parseFloat(clean);
+  if (isNaN(n)) return 0;
+  const lower = clean.toLowerCase();
+  if (lower.endsWith('k')) return Math.round(n * 1_000);
+  if (lower.endsWith('m')) return Math.round(n * 1_000_000);
+  return Math.round(n);
+}
+
+function extractViews(html: string): number | null {
+  const m = html.match(/<span\b[^>]*class="[^"]*tgme_widget_message_views[^"]*"[^>]*>([^<]+)</);
+  if (!m?.[1]) return null;
+  const n = parseViewCount(m[1].trim());
+  return n > 0 ? n : null;
+}
+
+function extractComments(html: string): number | null {
+  // Telegram shows comment count in the footer for channels with linked discussion groups
+  const m = html.match(/class="[^"]*tgme_widget_message_(?:replies|comments)_count[^"]*"[^>]*>([^<]+)</)
+    ?? html.match(/class="[^"]*tgme_widget_message_comment_count[^"]*"[^>]*>([^<]+)</);
+  if (!m?.[1]) return null;
+  const n = parseViewCount(m[1].trim());
+  return n > 0 ? n : null;
+}
+
+function extractReactions(html: string): ReactionData[] {
+  const reactions: ReactionData[] = [];
+  const reactionRe = /<a\b[^>]*class="[^"]*tgme_widget_message_reaction[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+  let m: RegExpExecArray | null;
+  while ((m = reactionRe.exec(html)) !== null) {
+    const inner = m[1]!;
+    const countMatch = inner.match(/class="[^"]*tgme_widget_message_reaction_count[^"]*"[^>]*>([^<]+)</);
+    if (!countMatch?.[1]) continue;
+    const count = parseViewCount(countMatch[1].trim());
+    if (count <= 0) continue;
+    // Emoji: try dedicated emoji span, then img alt, then bare text inside <i>
+    const emojiSpan = inner.match(/class="[^"]*tgme_widget_message_reaction_emoji[^"]*"[^>]*>([^<]+)</);
+    const emojiAlt  = inner.match(/\balt="([^"]+)"/);
+    const emojiI    = inner.match(/<i[^>]*>([^<]+)<\/i>/);
+    const emoji = (emojiSpan?.[1] ?? emojiAlt?.[1] ?? emojiI?.[1] ?? '').trim();
+    if (emoji) reactions.push({ emoji, count });
+  }
+  return reactions;
+}
+
 function extractChannelAvatar(html: string): string | null {
   // Channel avatar sits in the page header as a background-image on tgme_page_photo_image
   const m = html.match(/<i\b[^>]*class="[^"]*tgme_page_photo_image[^"]*"[^>]*style="([^"]+)"/i)
@@ -262,6 +309,9 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
   const fileExtraMatch = msgHtml.match(/class="tgme_widget_message_document_extra"[^>]*>([^<]+)</);
 
   const publishedAt = extractPublishedAt(msgHtml);
+  const views = extractViews(msgHtml);
+  const commentsCount = extractComments(msgHtml);
+  const reactions = extractReactions(msgHtml);
 
   const data: MessageData = {
     channelUsername,
@@ -276,6 +326,9 @@ export async function scrapePost(channelUsername: string, messageId: number): Pr
     video: null,
     file: null,
     hasAlbum: false,
+    views,
+    commentsCount,
+    reactions,
   };
 
   // Resolve images

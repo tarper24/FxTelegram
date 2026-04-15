@@ -48,6 +48,11 @@ export interface FileData {
   mimeType: string;
 }
 
+export interface ReactionData {
+  emoji: string;
+  count: number;
+}
+
 export interface MessageData {
   channelUsername: string;
   channelName: string;
@@ -61,6 +66,9 @@ export interface MessageData {
   video: VideoData | null;
   file: FileData | null;
   hasAlbum: boolean;
+  views: number | null;
+  commentsCount: number | null;
+  reactions: ReactionData[];
 }
 
 export interface Env {

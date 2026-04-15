@@ -37,9 +37,19 @@ function textToHtml(text: string): string {
 export function buildMastodonStatus(msg: MessageData, origin: string): Record<string, unknown> {
   const telegramUrl = `https://t.me/${msg.channelUsername}/${msg.messageId}`;
 
-  // Use pre-sanitized HTML from scraper; fall back to plain-text conversion
-  // for data cached before contentHtml was added
-  const contentHtml = msg.contentHtml || (msg.text ? textToHtml(msg.text) : '');
+  // Use pre-sanitized HTML from scraper (preserves <strong> title + <a> links).
+  // For data cached before contentHtml was added, fall back to explicit title
+  // handling so the bold opener is not lost.
+  let contentHtml = msg.contentHtml;
+  if (!contentHtml && msg.text) {
+    if (msg.title) {
+      contentHtml = `<p><strong>${escHtml(msg.title)}</strong></p>`;
+      const body = msg.text.replace(msg.title, '').trimStart();
+      if (body) contentHtml += textToHtml(body);
+    } else {
+      contentHtml = textToHtml(msg.text);
+    }
+  }
 
   // Media attachments
   const mediaAttachments: Record<string, unknown>[] = [];
@@ -106,9 +116,9 @@ export function buildMastodonStatus(msg: MessageData, origin: string): Record<st
     spoiler_text: '',
     sensitive: false,
     visibility: 'public',
-    replies_count: 0,
+    replies_count: msg.commentsCount ?? 0,
     reblogs_count: 0,
-    favourites_count: 0,
+    favourites_count: (msg.reactions ?? []).reduce((s, r) => s + r.count, 0),
     quotes_count: 0,
     account: {
       id: msg.channelUsername,

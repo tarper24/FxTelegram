@@ -1,4 +1,4 @@
-import type { MessageData } from './types';
+import type { MessageData, ReactionData } from './types';
 
 interface EmbedOptions {
   origin: string;
@@ -23,6 +23,21 @@ function meta(property: string, content: string): string {
 
 function nameMeta(name: string, content: string): string {
   return `<meta name="${name}" content="${esc(content)}"/>`;
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
+function formatStats(reactions: ReactionData[], commentsCount: number | null, views: number | null): string {
+  const parts: string[] = [];
+  const top = (reactions ?? []).slice(0, 3);
+  if (top.length > 0) parts.push(top.map(r => `${r.emoji} ${formatCount(r.count)}`).join(' '));
+  if (commentsCount !== null) parts.push(`💬 ${formatCount(commentsCount)}`);
+  if (views !== null) parts.push(`👁 ${formatCount(views)}`);
+  return parts.join('  ');
 }
 
 export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
@@ -56,10 +71,12 @@ export function buildEmbed(msg: MessageData, opts: EmbedOptions): string {
     title = msg.channelName;
   }
 
-  // og:description: body text (after title) + file metadata when present
+  // og:description: body text (after title) + file metadata + engagement stats
   const bodyParts: string[] = [];
   if (bodyText) bodyParts.push(bodyText);
   if (msg.file && !opts.textOnly) bodyParts.push(`📎 ${msg.file.name} · ${msg.file.mimeType}`);
+  const stats = formatStats(msg.reactions, msg.commentsCount, msg.views);
+  if (stats) bodyParts.push(stats);
   const description = bodyParts.join('\n');
 
   const tags: string[] = [

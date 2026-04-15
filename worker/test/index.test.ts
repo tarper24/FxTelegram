@@ -39,6 +39,9 @@ const BASE_MSG: MessageData = {
   video: null,
   file: null,
   hasAlbum: false,
+  views: null,
+  commentsCount: null,
+  reactions: [],
 };
 
 const ALBUM_MSG: MessageData = {

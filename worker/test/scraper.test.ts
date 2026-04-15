@@ -294,6 +294,43 @@ describe('scrapePost', () => {
     expect(data?.contentHtml).toBe('<p>Hello <a href="https://example.com">world</a></p>');
   });
 
+  it('extracts view count from tgme_widget_message_views', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="test/13">
+        <div class="tgme_widget_message_text">Hello</div>
+        <span class="tgme_widget_message_views">1.4K</span>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 13);
+    expect(data?.views).toBe(1400);
+  });
+
+  it('extracts reactions with emoji and count', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message" data-post="test/14">
+        <div class="tgme_widget_message_text">Post</div>
+        <a class="tgme_widget_message_reaction">
+          <span class="tgme_widget_message_reaction_emoji">👍</span>
+          <span class="tgme_widget_message_reaction_count">14</span>
+        </a>
+        <a class="tgme_widget_message_reaction">
+          <span class="tgme_widget_message_reaction_emoji">❤</span>
+          <span class="tgme_widget_message_reaction_count">9</span>
+        </a>
+      </div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 14);
+    expect(data?.reactions).toHaveLength(2);
+    expect(data?.reactions[0]).toEqual({ emoji: '👍', count: 14 });
+    expect(data?.reactions[1]).toEqual({ emoji: '❤', count: 9 });
+  });
+
   it('extractMessageText handles nested divs in message text without truncating', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>

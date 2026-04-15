@@ -14,6 +14,9 @@ const baseMessage: MessageData = {
   video: null,
   file: null,
   hasAlbum: false,
+  views: null,
+  commentsCount: null,
+  reactions: [],
 };
 
 const ORIGIN = 'https://fxtelegram.org';
