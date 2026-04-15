@@ -33,8 +33,12 @@ function formatCount(n: number): string {
 
 function formatStats(reactions: ReactionData[], commentsCount: number | null, views: number | null): string {
   const parts: string[] = [];
-  const top = (reactions ?? []).slice(0, 3);
-  if (top.length > 0) parts.push(top.map(r => `${r.emoji} ${formatCount(r.count)}`).join(' '));
+  const all = reactions ?? [];
+  if (all.length > 0) {
+    const topEmoji = all.slice(0, 3).map(r => r.emoji).join(' ');
+    const total = all.reduce((s, r) => s + r.count, 0);
+    parts.push(`${topEmoji} ${formatCount(total)}`);
+  }
   if (commentsCount !== null) parts.push(`💬 ${formatCount(commentsCount)}`);
   if (views !== null) parts.push(`👁️ ${formatCount(views)}`);
   return parts.join('  ');

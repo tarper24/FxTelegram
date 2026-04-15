@@ -176,7 +176,8 @@ function extractReactions(html: string): ReactionData[] {
     // that default to text presentation — turns ❤ → ❤️, ❤‍🔥 → ❤️‍🔥, etc.
     const emoji = emojiMatch[1].trim().replace(/([\u2600-\u27FF])(?!\uFE0F)/g, '$1\uFE0F');
     const count = parseViewCount(countText);
-    if (count > 0 && emoji) reactions.push({ emoji, count });
+    // Skip custom Telegram emoji — their <b> fallback contains no standard Unicode emoji
+    if (count > 0 && /\p{Emoji}/u.test(emoji)) reactions.push({ emoji, count });
   }
   return reactions;
 }
