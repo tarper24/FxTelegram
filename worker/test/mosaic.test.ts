@@ -82,4 +82,26 @@ describe('buildMosaic', () => {
     const dims = getMosaicDimensions([{ width: 0, height: 0 }, { width: 0, height: 0 }]);
     expect(dims.height).toBe(400); // MOSAIC_CELL_H default
   });
+
+  it('mixed portrait+landscape rows produce different row heights (4-image 2×2)', () => {
+    // Row 0: two landscape images; row 1: two portrait images
+    const mixed = getMosaicDimensions([
+      { width: 1920, height: 1080 }, // landscape
+      { width: 1920, height: 1080 },
+      { width: 1080, height: 1920 }, // portrait
+      { width: 1080, height: 1920 },
+    ]);
+    // Canvas height should be > portrait-only canvas (row 0 is shorter, row 1 taller)
+    const allPortrait = getMosaicDimensions([
+      { width: 1080, height: 1920 }, { width: 1080, height: 1920 },
+      { width: 1080, height: 1920 }, { width: 1080, height: 1920 },
+    ]);
+    const allLandscape = getMosaicDimensions([
+      { width: 1920, height: 1080 }, { width: 1920, height: 1080 },
+      { width: 1920, height: 1080 }, { width: 1920, height: 1080 },
+    ]);
+    // Mixed canvas height should be between all-landscape and all-portrait
+    expect(mixed.height).toBeGreaterThan(allLandscape.height);
+    expect(mixed.height).toBeLessThan(allPortrait.height);
+  });
 });

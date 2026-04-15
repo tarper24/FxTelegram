@@ -10,129 +10,157 @@ import { LIMITS } from './constants';
 
 const CELL_W = LIMITS.MOSAIC_CELL_W; // 600
 
-interface ImageInput { url: string; width: number; height: number }
+export interface ImageInput { url: string; width: number; height: number }
 interface Cell { x: number; y: number; w: number; h: number }
 interface Layout { canvasW: number; canvasH: number; cells: Cell[] }
 
 /**
- * Compute cell height from the median aspect ratio of the source images.
- * Falls back to LIMITS.MOSAIC_CELL_H (400) when no valid dimensions exist.
- * Result is clamped so cells are never more extreme than 2:1 in either direction.
+ * Optimal row height for a set of images at a given cell width.
+ *
+ * Each image's "natural" height at cellW pixels wide is cellW * imgH / imgW.
+ * We take the median of those naturals and clamp to [cellW/2, 2*cellW] so no
+ * row is narrower than 2:1 landscape or taller than 1:2 portrait.
+ * Falls back to MOSAIC_CELL_H when no image has valid dimensions.
  */
-function computeCellHeight(images: Pick<ImageInput, 'width' | 'height'>[]): number {
-  const aspects = images
+function rowHeight(
+  images: Pick<ImageInput, 'width' | 'height'>[],
+  cellW: number,
+): number {
+  const naturals = images
     .filter(i => i.width > 0 && i.height > 0)
-    .map(i => i.width / i.height)
+    .map(i => Math.round(cellW * i.height / i.width))
     .sort((a, b) => a - b);
 
-  if (aspects.length === 0) return LIMITS.MOSAIC_CELL_H;
-
-  const median = aspects[Math.floor(aspects.length / 2)]!;
-  // Clamp: [0.5 = 1:2 portrait … 2.0 = 2:1 landscape]
-  const clamped = Math.max(0.5, Math.min(2.0, median));
-  return Math.round(CELL_W / clamped);
+  if (naturals.length === 0) return LIMITS.MOSAIC_CELL_H;
+  const median = naturals[Math.floor(naturals.length / 2)]!;
+  return Math.max(Math.round(cellW / 2), Math.min(cellW * 2, median));
 }
 
 /**
- * Layout table for 2–7 images. All heights are multiples of cellH.
+ * Layout table for 2–7 images.
+ * Row heights adapt to the actual images in each row at each row's cell width.
  *
- *  2        [1][2]                        canvasW×cellH
- *  3        [BIG][2] / [BIG][3]           canvasW×(2*cellH)  big=W×2H, sm=W×H
- *  4        [1][2]   / [3][4]             canvasW×(2*cellH)  2×2
- *  5        [BIG][2][3] / [BIG][4][5]     canvasW×(2*cellH)  big=W×2H, sm=(W/2)×H
- *  6        [1][2][3] / [4][5][6]         canvasW×(2*cellH)  3×2  ((2W/3)×H cells)
- *  7+       [BIG][2][3]/[4][5]/[6][7]     canvasW×(3*cellH)  big=W×3H, sm=(W/2)×H
+ *  2   [1][2]                     each 600px wide
+ *  3   [BIG][2] / [BIG][3]        big=600×totalH, sm=600×rowH
+ *  4   [1][2]  / [3][4]           2×2, per-row heights
+ *  5   [BIG][2][3] / [BIG][4][5]  big=600×totalH, sm=300×rowH
+ *  6   [1][2][3] / [4][5][6]      3×2, 400px wide cells, per-row heights
+ *  7+  [BIG][2][3]/[4][5]/[6][7]  big=600×totalH, sm=300×rowH, 3 rows
  */
-function getLayout(n: number, cellH: number): Layout {
+function getLayout(images: Pick<ImageInput, 'width' | 'height'>[]): Layout {
+  const n = images.length;
   const W = CELL_W;
-  const H = cellH;
   const canvasW = 2 * W; // always 1200
 
   switch (n) {
-    case 2:
+    case 2: {
+      const h = rowHeight(images, W);
       return {
-        canvasW, canvasH: H,
+        canvasW, canvasH: h,
         cells: [
-          { x: 0, y: 0, w: W, h: H },
-          { x: W, y: 0, w: W, h: H },
+          { x: 0, y: 0, w: W, h },
+          { x: W, y: 0, w: W, h },
         ],
       };
-    case 3:
+    }
+
+    case 3: {
+      // Right-side images determine row heights; big image cover-crops to fill.
+      const h0 = rowHeight([images[1]!], W);
+      const h1 = rowHeight([images[2]!], W);
+      const totalH = h0 + h1;
       return {
-        canvasW, canvasH: 2 * H,
+        canvasW, canvasH: totalH,
         cells: [
-          { x: 0, y: 0, w: W, h: 2 * H },     // big left
-          { x: W, y: 0, w: W, h: H },           // small top-right
-          { x: W, y: H, w: W, h: H },           // small bot-right
+          { x: 0, y: 0,  w: W, h: totalH }, // big left
+          { x: W, y: 0,  w: W, h: h0 },
+          { x: W, y: h0, w: W, h: h1 },
         ],
       };
-    case 4:
+    }
+
+    case 4: {
+      const h0 = rowHeight(images.slice(0, 2), W);
+      const h1 = rowHeight(images.slice(2, 4), W);
       return {
-        canvasW, canvasH: 2 * H,
+        canvasW, canvasH: h0 + h1,
         cells: [
-          { x: 0, y: 0, w: W, h: H },
-          { x: W, y: 0, w: W, h: H },
-          { x: 0, y: H, w: W, h: H },
-          { x: W, y: H, w: W, h: H },
+          { x: 0, y: 0,  w: W, h: h0 },
+          { x: W, y: 0,  w: W, h: h0 },
+          { x: 0, y: h0, w: W, h: h1 },
+          { x: W, y: h0, w: W, h: h1 },
         ],
       };
+    }
+
     case 5: {
       const sw = W / 2; // 300
+      const h0 = rowHeight([images[1]!, images[2]!], sw);
+      const h1 = rowHeight([images[3]!, images[4]!], sw);
+      const totalH = h0 + h1;
       return {
-        canvasW, canvasH: 2 * H,
+        canvasW, canvasH: totalH,
         cells: [
-          { x: 0,      y: 0, w: W,  h: 2 * H }, // big left
-          { x: W,      y: 0, w: sw, h: H },
-          { x: W + sw, y: 0, w: sw, h: H },
-          { x: W,      y: H, w: sw, h: H },
-          { x: W + sw, y: H, w: sw, h: H },
+          { x: 0,      y: 0,  w: W,  h: totalH }, // big left
+          { x: W,      y: 0,  w: sw, h: h0 },
+          { x: W + sw, y: 0,  w: sw, h: h0 },
+          { x: W,      y: h0, w: sw, h: h1 },
+          { x: W + sw, y: h0, w: sw, h: h1 },
         ],
       };
     }
+
     case 6: {
       const cw = Math.round(2 * W / 3); // 400
+      const h0 = rowHeight(images.slice(0, 3), cw);
+      const h1 = rowHeight(images.slice(3, 6), cw);
       return {
-        canvasW, canvasH: 2 * H,
-        cells: Array.from({ length: 6 }, (_, i) => ({
-          x: (i % 3) * cw,
-          y: Math.floor(i / 3) * H,
-          w: cw,
-          h: H,
-        })),
+        canvasW, canvasH: h0 + h1,
+        cells: [
+          { x: 0,       y: 0,  w: cw, h: h0 },
+          { x: cw,      y: 0,  w: cw, h: h0 },
+          { x: 2 * cw,  y: 0,  w: cw, h: h0 },
+          { x: 0,       y: h0, w: cw, h: h1 },
+          { x: cw,      y: h0, w: cw, h: h1 },
+          { x: 2 * cw,  y: h0, w: cw, h: h1 },
+        ],
       };
     }
-    default: { // 7+: big left full-height + 2×3 small right
+
+    default: { // 7+: big left (full height) + 2×3 right
       const sw = W / 2; // 300
+      const h0 = rowHeight([images[1]!, images[2]!], sw);
+      const h1 = rowHeight([images[3]!, images[4]!], sw);
+      const h2 = rowHeight([images[5]!, images[6]!], sw);
+      const totalH = h0 + h1 + h2;
       return {
-        canvasW, canvasH: 3 * H,
+        canvasW, canvasH: totalH,
         cells: [
-          { x: 0, y: 0, w: W, h: 3 * H },
-          ...Array.from({ length: 6 }, (_, i) => ({
-            x: W + (i % 2) * sw,
-            y: Math.floor(i / 2) * H,
-            w: sw,
-            h: H,
-          })),
+          { x: 0,      y: 0,           w: W,  h: totalH }, // big left
+          { x: W,      y: 0,           w: sw, h: h0 },
+          { x: W + sw, y: 0,           w: sw, h: h0 },
+          { x: W,      y: h0,          w: sw, h: h1 },
+          { x: W + sw, y: h0,          w: sw, h: h1 },
+          { x: W,      y: h0 + h1,     w: sw, h: h2 },
+          { x: W + sw, y: h0 + h1,     w: sw, h: h2 },
         ],
       };
     }
   }
 }
 
-/** Canvas dimensions for n images at the given source aspect ratios. */
+/** Canvas dimensions for n images — for callers that need size before building. */
 export function getMosaicDimensions(
   images: Pick<ImageInput, 'width' | 'height'>[],
 ): { width: number; height: number } {
-  const capped = images.slice(0, LIMITS.MAX_MOSAIC_IMAGES);
-  const cellH = computeCellHeight(capped);
-  const l = getLayout(capped.length, cellH);
+  const l = getLayout(images.slice(0, LIMITS.MAX_MOSAIC_IMAGES));
   return { width: l.canvasW, height: l.canvasH };
 }
 
 // ── Photon helpers ──────────────────────────────────────────────────────────
 
-function createWhiteCanvas(width: number, height: number): PhotonImage {
-  return new PhotonImage(new Uint8Array(width * height * 4).fill(255), width, height);
+function createWhiteCanvas(w: number, h: number): PhotonImage {
+  return new PhotonImage(new Uint8Array(w * h * 4).fill(255), w, h);
 }
 
 async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
@@ -150,9 +178,6 @@ function decodeOrPlaceholder(bytes: Uint8Array | null, w: number, h: number): Ph
   return createWhiteCanvas(w, h);
 }
 
-/**
- * Resize an image to cover a target cell via center-crop (no squishing).
- */
 function coverCrop(img: PhotonImage, targetW: number, targetH: number): PhotonImage {
   const srcW = img.get_width();
   const srcH = img.get_height();
@@ -174,15 +199,16 @@ function coverCrop(img: PhotonImage, targetW: number, targetH: number): PhotonIm
 
 /**
  * Composite up to MAX_MOSAIC_IMAGES images into a layout-aware mosaic.
- * Cell height is derived from the median aspect ratio of the source images
- * so portrait albums render as portrait cells and landscape as landscape.
+ *
+ * Each row's height is derived from the median natural height of images in
+ * that row at that row's cell width, so mixed portrait/landscape albums
+ * crop each image as little as possible.
  */
 export async function buildMosaic(images: ImageInput[]): Promise<Uint8Array> {
   await initPhoton.ensure();
 
   const capped = images.slice(0, LIMITS.MAX_MOSAIC_IMAGES);
-  const cellH = computeCellHeight(capped);
-  const layout = getLayout(capped.length, cellH);
+  const layout = getLayout(capped);
 
   const allBytes = await Promise.all(capped.map(i => fetchImageBytes(i.url)));
   const decoded = allBytes.map((b, i) =>
