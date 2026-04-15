@@ -47,23 +47,42 @@ describe('buildMosaic', () => {
     expect(result.length).toBeGreaterThan(0);
   });
 
-  it('handles 4 images without throwing', async () => {
+  it('handles 3 images without throwing', async () => {
     mockImageFetch();
-    const result = await buildMosaic([
-      'https://cdn.tg/a.jpg',
-      'https://cdn.tg/b.jpg',
-      'https://cdn.tg/c.jpg',
-      'https://cdn.tg/d.jpg',
-    ]);
+    const result = await buildMosaic(['a','b','c'].map(x => `https://cdn.tg/${x}.jpg`));
     expect(result.length).toBeGreaterThan(0);
   });
 
-  it('caps at 4 images even if more are passed', async () => {
+  it('handles 4 images without throwing', async () => {
+    mockImageFetch();
+    const result = await buildMosaic(['a','b','c','d'].map(x => `https://cdn.tg/${x}.jpg`));
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('handles 5 images without throwing', async () => {
+    mockImageFetch();
+    const result = await buildMosaic(['a','b','c','d','e'].map(x => `https://cdn.tg/${x}.jpg`));
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('handles 6 images without throwing', async () => {
+    mockImageFetch();
+    const result = await buildMosaic(['a','b','c','d','e','f'].map(x => `https://cdn.tg/${x}.jpg`));
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('handles 7 images without throwing', async () => {
+    mockImageFetch();
+    const result = await buildMosaic(['a','b','c','d','e','f','g'].map(x => `https://cdn.tg/${x}.jpg`));
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('caps at 7 images even if more are passed', async () => {
     const fetchSpy = vi.fn().mockImplementation(() =>
       Promise.resolve(new Response(TINY_JPEG.slice(), { headers: { 'Content-Type': 'image/jpeg' } }))
     );
     vi.stubGlobal('fetch', fetchSpy);
-    await buildMosaic(['a','b','c','d','e','f'].map(x => `https://cdn.tg/${x}.jpg`));
-    expect(fetchSpy).toHaveBeenCalledTimes(4);
+    await buildMosaic(['a','b','c','d','e','f','g','h'].map(x => `https://cdn.tg/${x}.jpg`));
+    expect(fetchSpy).toHaveBeenCalledTimes(7);
   });
 });

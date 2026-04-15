@@ -8,8 +8,100 @@ import {
 } from '@cf-wasm/photon';
 import { LIMITS } from './constants';
 
-const CELL_W = LIMITS.MOSAIC_CELL_W; // 600
-const CELL_H = LIMITS.MOSAIC_CELL_H; // 400
+const W = LIMITS.MOSAIC_CELL_W; // 600
+const H = LIMITS.MOSAIC_CELL_H; // 400
+
+interface Cell { x: number; y: number; w: number; h: number }
+interface Layout { canvasW: number; canvasH: number; cells: Cell[] }
+
+/**
+ * Layout table for 2–7 images.
+ *
+ *  2        [1][2]                    1200×400
+ *  3        [BIG][2] / [BIG][3]       1200×800  big=600×800, sm=600×400
+ *  4        [1][2]  / [3][4]          1200×800  2×2
+ *  5        [BIG][2][3] / [BIG][4][5] 1200×800  big=600×800, sm=300×400
+ *  6        [1][2][3] / [4][5][6]     1200×800  3×2 (400×400 cells)
+ *  7        [BIG][2][3]/[4][5]/[6][7] 1200×1200 big=600×1200, sm=300×400
+ */
+function getLayout(n: number): Layout {
+  switch (n) {
+    case 2:
+      return {
+        canvasW: 2 * W, canvasH: H,
+        cells: [
+          { x: 0, y: 0, w: W, h: H },
+          { x: W, y: 0, w: W, h: H },
+        ],
+      };
+    case 3:
+      return {
+        canvasW: 2 * W, canvasH: 2 * H,
+        cells: [
+          { x: 0, y: 0, w: W, h: 2 * H },     // big left
+          { x: W, y: 0, w: W, h: H },           // small top-right
+          { x: W, y: H, w: W, h: H },           // small bot-right
+        ],
+      };
+    case 4:
+      return {
+        canvasW: 2 * W, canvasH: 2 * H,
+        cells: [
+          { x: 0, y: 0, w: W, h: H },
+          { x: W, y: 0, w: W, h: H },
+          { x: 0, y: H, w: W, h: H },
+          { x: W, y: H, w: W, h: H },
+        ],
+      };
+    case 5: {
+      const sw = W / 2; // 300
+      return {
+        canvasW: 2 * W, canvasH: 2 * H,
+        cells: [
+          { x: 0,       y: 0, w: W,  h: 2 * H }, // big left
+          { x: W,       y: 0, w: sw, h: H },       // sm top-left
+          { x: W + sw,  y: 0, w: sw, h: H },       // sm top-right
+          { x: W,       y: H, w: sw, h: H },       // sm bot-left
+          { x: W + sw,  y: H, w: sw, h: H },       // sm bot-right
+        ],
+      };
+    }
+    case 6: {
+      const cw = Math.round(2 * W / 3); // 400
+      return {
+        canvasW: 2 * W, canvasH: 2 * H,
+        cells: Array.from({ length: 6 }, (_, i) => ({
+          x: (i % 3) * cw,
+          y: Math.floor(i / 3) * H,
+          w: cw,
+          h: H,
+        })),
+      };
+    }
+    default: {
+      // 7 (or more, capped): big left full-height + 2×3 small right
+      const sw = W / 2; // 300
+      return {
+        canvasW: 2 * W, canvasH: 3 * H,
+        cells: [
+          { x: 0, y: 0, w: W, h: 3 * H },                   // big 600×1200
+          ...Array.from({ length: 6 }, (_, i) => ({
+            x: W + (i % 2) * sw,
+            y: Math.floor(i / 2) * H,
+            w: sw,
+            h: H,
+          })),
+        ],
+      };
+    }
+  }
+}
+
+/** Canvas dimensions for n images — used by callers that need to know the size upfront. */
+export function getMosaicDimensions(n: number): { width: number; height: number } {
+  const l = getLayout(Math.min(Math.max(n, 2), LIMITS.MAX_MOSAIC_IMAGES));
+  return { width: l.canvasW, height: l.canvasH };
+}
 
 /**
  * Create a blank white PhotonImage.
@@ -35,10 +127,9 @@ async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
 
 /**
  * Decode raw bytes into a PhotonImage.
- * Falls back to a white placeholder cell if the WASM JPEG decoder panics
- * (RuntimeError: unreachable on corrupt or incomplete images).
+ * Falls back to a white placeholder cell if the WASM JPEG decoder panics.
  */
-function decodeOrPlaceholder(bytes: Uint8Array | null): PhotonImage {
+function decodeOrPlaceholder(bytes: Uint8Array | null, w: number, h: number): PhotonImage {
   if (bytes !== null) {
     try {
       return PhotonImage.new_from_byteslice(bytes);
@@ -46,7 +137,7 @@ function decodeOrPlaceholder(bytes: Uint8Array | null): PhotonImage {
       // WASM decode failure — fall through to placeholder
     }
   }
-  return createWhiteCanvas(CELL_W, CELL_H);
+  return createWhiteCanvas(w, h);
 }
 
 /**
@@ -73,55 +164,44 @@ function coverCrop(img: PhotonImage, targetW: number, targetH: number): PhotonIm
 
 /**
  * Composite up to MAX_MOSAIC_IMAGES image URLs into a grid and return JPEG bytes.
- *
- * Layout:
- *   1–2 images → 1 row × 2 cols  (1200 × 400)
- *   3–4 images → 2 rows × 2 cols (1200 × 800)
  */
 export async function buildMosaic(urls: string[]): Promise<Uint8Array> {
   await initPhoton.ensure();
 
   const capped = urls.slice(0, LIMITS.MAX_MOSAIC_IMAGES);
-  const count = capped.length;
+  const layout = getLayout(capped.length);
 
-  const rows = count <= 2 ? 1 : 2;
-  const canvasW = 2 * CELL_W;
-  const canvasH = rows * CELL_H;
-
-  // Fetch all images in parallel for production performance.
+  // Fetch all images in parallel.
   const allBytes = await Promise.all(capped.map(fetchImageBytes));
-  const images = allBytes.map(decodeOrPlaceholder);
+  const images = allBytes.map((b, i) =>
+    decodeOrPlaceholder(b, layout.cells[i]!.w, layout.cells[i]!.h)
+  );
 
-  // Track images not yet freed so we can clean up if resize/watermark throws.
-  const pendingFree: PhotonImage[] = [...images];
+  // Track images not yet freed so we can clean up on early throw.
+  const toFree = new Set<PhotonImage>(images);
   let canvas: PhotonImage | null = null;
 
   try {
-    canvas = createWhiteCanvas(canvasW, canvasH);
+    canvas = createWhiteCanvas(layout.canvasW, layout.canvasH);
 
     for (let i = 0; i < images.length; i++) {
-      const cell = coverCrop(images[i]!, CELL_W, CELL_H);
-      pendingFree.push(cell); // track for cleanup if watermark throws
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      watermark(canvas, cell, BigInt(col * CELL_W), BigInt(row * CELL_H));
+      const src = images[i]!;
+      const { x, y, w, h } = layout.cells[i]!;
+      const cell = coverCrop(src, w, h);
+      toFree.add(cell);
+      watermark(canvas, cell, BigInt(x), BigInt(y));
       cell.free();
-      pendingFree.splice(pendingFree.indexOf(cell), 1); // untrack after free
-      images[i]!.free();
-      pendingFree.shift(); // successfully freed source image — remove from head
+      toFree.delete(cell);
+      src.free();
+      toFree.delete(src);
     }
 
     const result = canvas.get_bytes_jpeg(85);
     canvas.free();
     return result;
   } catch (err) {
-    // Free any images not yet freed due to early throw.
-    for (const img of pendingFree) {
-      try { img.free(); } catch { /* ignore double-free */ }
-    }
-    if (canvas) {
-      try { canvas.free(); } catch { /* ignore */ }
-    }
+    for (const img of toFree) try { img.free(); } catch { /* ignore double-free */ }
+    if (canvas) try { canvas.free(); } catch { /* ignore */ }
     throw err;
   }
 }

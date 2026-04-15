@@ -18,7 +18,7 @@ export const TTL = {
 export const LIMITS = {
   VIDEO_REDIRECT_BYTES: 100 * 1024 * 1024,  // 100 MB
   MAX_ALBUM_IMAGES: 10,                       // cap mosaic/gallery at 10 images
-  MAX_MOSAIC_IMAGES: 4,                       // max images composited into one mosaic
+  MAX_MOSAIC_IMAGES: 7,                       // max images composited into one mosaic
   MOSAIC_CELL_W: 600,                         // width per cell in mosaic grid
   MOSAIC_CELL_H: 400,                         // height per cell in mosaic grid
 } as const;

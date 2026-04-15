@@ -3,7 +3,7 @@ import { getCached, setCache, getCachedBinary, setCacheBinary, postKey, videoKey
 import { scrapePost } from './scraper';
 import { buildEmbed, buildOEmbedJson } from './embed';
 import { handleVideoProxy } from './video';
-import { buildMosaic } from './mosaic';
+import { buildMosaic, getMosaicDimensions } from './mosaic';
 import { buildMastodonStatus } from './mastodon';
 import { translateText } from './translate';
 import { UA, TTL } from './constants';
@@ -100,8 +100,8 @@ export default {
       }
       if (cfg.forceMosaic && msg.images.length > 1) {
         const mosaicUrl = `${origin}/mosaic/${cfg.channelUsername}/${cfg.messageId}`;
-        const rows = msg.images.length <= 2 ? 1 : 2;
-        msg = { ...msg, images: [{ url: mosaicUrl, width: 1200, height: rows * 400 }], hasAlbum: false };
+        const { width, height } = getMosaicDimensions(msg.images.length);
+        msg = { ...msg, images: [{ url: mosaicUrl, width, height }], hasAlbum: false };
       }
       const status = buildMastodonStatus(msg, origin);
       return new Response(JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } });
