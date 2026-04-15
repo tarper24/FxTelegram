@@ -294,6 +294,28 @@ describe('scrapePost', () => {
     expect(data?.contentHtml).toBe('<p>Hello <a href="https://example.com">world</a></p>');
   });
 
+  it('contentHtml inserts space before external link when directly preceded by word char', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">Artwork for<a href="https://example.com">RocketFocks</a></div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 15);
+    expect(data?.contentHtml).toBe('<p>Artwork for <a href="https://example.com">RocketFocks</a></p>');
+  });
+
+  it('contentHtml renders t.me links as plain text to prevent Discord appending instance domain to @mentions', async () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:title" content="Test Channel"/>
+    </head><body>
+      <div class="tgme_widget_message_text">Kovvi Young (<a href="https://t.me/kovvi_young">@kovvi_young</a>)</div>
+    </body></html>`;
+    mockFetch(html);
+    const data = await scrapePost('test', 16);
+    expect(data?.contentHtml).toBe('<p>Kovvi Young (@kovvi_young)</p>');
+  });
+
   it('extracts view count from tgme_widget_message_views', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>

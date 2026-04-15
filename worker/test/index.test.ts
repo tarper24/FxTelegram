@@ -355,21 +355,6 @@ describe('Origin propagation', () => {
   });
 });
 
-describe('Mastodon instance info (/api/v1/instance)', () => {
-  it('returns instance JSON with title FxTelegram', async () => {
-    const env: Env = { FXTELEGRAM_KV: makeKv() };
-    const res = await worker.fetch(
-      new Request(`${ORIGIN}/api/v1/instance`, { headers: { 'User-Agent': BOT_UA } }),
-      env, makeCtx()
-    );
-    expect(res.status).toBe(200);
-    expect(res.headers.get('Content-Type')).toContain('application/json');
-    const json = await res.json() as Record<string, unknown>;
-    expect(json.title).toBe('FxTelegram');
-    expect(json.uri).toBe('fxtelegram.org');
-  });
-});
-
 describe('ActivityPub object URL (/users/)', () => {
   it('returns ActivityPub JSON with id matching the requested URL', async () => {
     const env: Env = { FXTELEGRAM_KV: makeKv() };

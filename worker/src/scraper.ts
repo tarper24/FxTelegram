@@ -40,9 +40,17 @@ function extractContentHtml(innerHtml: string): string {
   html = html.replace(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
     const text = escCh(decodeEntities(inner.replace(/<[^>]+>/g, '').trim()));
     const idx = links.length;
-    links.push(`<a href="${href}">${text}</a>`);
+    // Internal t.me and tg:// links → plain text so Discord doesn't resolve
+    // @mentions as Mastodon handles and append the FxTelegram instance domain.
+    const isInternal = href.includes('//t.me/') || href.startsWith('tg://') || !href.startsWith('http');
+    links.push(isInternal ? text : `<a href="${href}">${text}</a>`);
     return `\x01L${idx}\x01`;
   });
+
+  // Inject a space when a link placeholder is directly adjacent to a word character
+  // (e.g. "Artwork for<a>RocketFocks</a>" → "Artwork for <a>RocketFocks</a>")
+  html = html.replace(/(\w)(\x01L\d+\x01)/g, '$1 $2');
+  html = html.replace(/(\x01L\d+\x01)(\w)/g, '$1 $2');
 
   // Stash <b>/<strong> bold spans
   const bolds: string[] = [];
