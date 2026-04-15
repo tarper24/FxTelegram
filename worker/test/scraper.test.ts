@@ -258,11 +258,11 @@ describe('scrapePost', () => {
     expect(data?.images[0]?.height).toBe(720);
   });
 
-  it('extracts channel avatar URL from tgme_page_photo_image', async () => {
+  it('extracts channel avatar URL from tgme_page_photo_image img src', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="FxTelegram"/>
     </head><body>
-      <i class="tgme_page_photo_image" style="background-image:url('https://cdn4.telesco.pe/avatar.jpg')"></i>
+      <i class="tgme_page_photo_image bgcolor4" data-content="FX"><img src="https://cdn4.telesco.pe/avatar.jpg"></i>
       <div class="tgme_widget_message" data-post="FxTelegram24/1">
         <div class="tgme_widget_message_text">Hello</div>
       </div>
@@ -308,27 +308,25 @@ describe('scrapePost', () => {
     expect(data?.views).toBe(1400);
   });
 
-  it('extracts reactions with emoji and count', async () => {
+  it('extracts reactions with emoji and count (actual Telegram HTML structure)', async () => {
     const html = `<!DOCTYPE html><html><head>
       <meta property="og:title" content="Test Channel"/>
     </head><body>
       <div class="tgme_widget_message" data-post="test/14">
         <div class="tgme_widget_message_text">Post</div>
-        <a class="tgme_widget_message_reaction">
-          <span class="tgme_widget_message_reaction_emoji">👍</span>
-          <span class="tgme_widget_message_reaction_count">14</span>
-        </a>
-        <a class="tgme_widget_message_reaction">
-          <span class="tgme_widget_message_reaction_emoji">❤</span>
-          <span class="tgme_widget_message_reaction_count">9</span>
-        </a>
+        <div class="tgme_widget_message_reactions js-message_reactions">
+          <span class="tgme_reaction"><i class="emoji" style="background-image:url('//telegram.org/img/emoji/40/E29DA4.png')"><b>❤</b></i>53</span>
+          <span class="tgme_reaction"><i class="emoji" style="background-image:url('//telegram.org/img/emoji/40/F09FA5B0.png')"><b>🥰</b></i>6</span>
+        </div>
+        <span class="tgme_widget_message_views">930</span>
       </div>
     </body></html>`;
     mockFetch(html);
     const data = await scrapePost('test', 14);
     expect(data?.reactions).toHaveLength(2);
-    expect(data?.reactions[0]).toEqual({ emoji: '👍', count: 14 });
-    expect(data?.reactions[1]).toEqual({ emoji: '❤', count: 9 });
+    expect(data?.reactions[0]).toEqual({ emoji: '❤', count: 53 });
+    expect(data?.reactions[1]).toEqual({ emoji: '🥰', count: 6 });
+    expect(data?.views).toBe(930);
   });
 
   it('extractMessageText handles nested divs in message text without truncating', async () => {

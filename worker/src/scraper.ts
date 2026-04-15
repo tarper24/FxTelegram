@@ -169,30 +169,29 @@ function extractComments(html: string): number | null {
 }
 
 function extractReactions(html: string): ReactionData[] {
+  // Actual structure: <span class="tgme_reaction"><i class="emoji" ...><b>❤</b></i>53</span>
   const reactions: ReactionData[] = [];
-  const reactionRe = /<a\b[^>]*class="[^"]*tgme_widget_message_reaction[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+  const reactionRe = /<span\b[^>]*class="[^"]*tgme_reaction[^"]*"[^>]*>([\s\S]*?)<\/span>/g;
   let m: RegExpExecArray | null;
   while ((m = reactionRe.exec(html)) !== null) {
     const inner = m[1]!;
-    const countMatch = inner.match(/class="[^"]*tgme_widget_message_reaction_count[^"]*"[^>]*>([^<]+)</);
-    if (!countMatch?.[1]) continue;
-    const count = parseViewCount(countMatch[1].trim());
-    if (count <= 0) continue;
-    // Emoji: try dedicated emoji span, then img alt, then bare text inside <i>
-    const emojiSpan = inner.match(/class="[^"]*tgme_widget_message_reaction_emoji[^"]*"[^>]*>([^<]+)</);
-    const emojiAlt  = inner.match(/\balt="([^"]+)"/);
-    const emojiI    = inner.match(/<i[^>]*>([^<]+)<\/i>/);
-    const emoji = (emojiSpan?.[1] ?? emojiAlt?.[1] ?? emojiI?.[1] ?? '').trim();
-    if (emoji) reactions.push({ emoji, count });
+    // Emoji text is inside <b> within <i class="emoji">
+    const emojiMatch = inner.match(/<b>([^<]+)<\/b>/);
+    // Count is the text node immediately after </i>
+    const countText = inner.match(/<\/i>\s*([^<\s][^<]*)/)?.[1]?.trim();
+    if (!emojiMatch?.[1] || !countText) continue;
+    const emoji = emojiMatch[1].trim();
+    const count = parseViewCount(countText);
+    if (count > 0 && emoji) reactions.push({ emoji, count });
   }
   return reactions;
 }
 
 function extractChannelAvatar(html: string): string | null {
-  // Channel avatar sits in the page header as a background-image on tgme_page_photo_image
-  const m = html.match(/<i\b[^>]*class="[^"]*tgme_page_photo_image[^"]*"[^>]*style="([^"]+)"/i)
-    ?? html.match(/<i\b[^>]*style="([^"]+)"[^>]*class="[^"]*tgme_page_photo_image[^"]*"/i);
-  return m?.[1] ? extractBgUrl(m[1]) : null;
+  // Channel avatar: <i class="tgme_page_photo_image ..."><img src="..."></i>
+  const block = html.match(/<i\b[^>]*class="[^"]*tgme_page_photo_image[^"]*"[^>]*>[\s\S]*?<\/i>/i);
+  if (!block) return null;
+  return block[0].match(/<img\b[^>]*\bsrc="([^"]+)"/i)?.[1] ?? null;
 }
 
 function extractPublishedAt(html: string): string | null {
