@@ -35,10 +35,10 @@ jobs:
         # step independent of wrangler internals.
         run: npx tsc --noEmit
 
-      # cloudflare/wrangler-action@v3.14.1 — pinned to latest tag as of 2026-04-14.
+      # cloudflare/wrangler-action@v3.15.0 — pinned to latest tag as of 2026-04-14.
       # Deploys to the [env.dev] block in wrangler.toml.
       - name: Deploy to Dev via Wrangler
-        uses: cloudflare/wrangler-action@v3.14.1
+        uses: cloudflare/wrangler-action@v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
